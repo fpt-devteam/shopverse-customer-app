@@ -22,3 +22,22 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
+
+# Android specific
+*.iml
+.gradle
+/local.properties
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# API Keys and Secrets (DO NOT COMMIT)
+**/google-services.json
+**/secrets.properties
+**/*_key.properties

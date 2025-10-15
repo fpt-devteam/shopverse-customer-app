@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">shopverse-customer-app</string>
+    <string name="title_home">Home</string>
+    <string name="title_dashboard">Dashboard</string>
+    <string name="title_notifications">Notifications</string>
+    <string name="title_maps">Store Locator</string>
+
+    <!-- Map UI Strings -->
+    <string name="search_hint">Ban muốn tìm shop gần khu vực nào?</string>
+    <string name="btn_nearest_store">Nearest Store</string>
+    <string name="btn_get_directions">Get Directions</string>
+    <string name="no_store_selected">Select a store from the map</string>
+    <string name="location_permission_needed">Location permission needed to find nearest store</string>
+    <string name="location_unavailable">Location unavailable</string>
+    <string name="nearest_store_found">Nearest store found</string>
+    <string name="stores_open_hours">Mở cửa: %s</string>
+</resources>
