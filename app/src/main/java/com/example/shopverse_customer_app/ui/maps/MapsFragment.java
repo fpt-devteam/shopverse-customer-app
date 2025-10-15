@@ -120,6 +120,38 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
         editSearchLocation = view.findViewById(R.id.edit_search_location);
         btnClearSearch = view.findViewById(R.id.btn_clear_search);
 
+        // Debug: Check if views are found
+        if (searchBar == null) {
+            Log.e(TAG, "ERROR: searchBar is NULL!");
+        } else {
+            Log.d(TAG, "searchBar found successfully");
+        }
+
+        if (editSearchLocation == null) {
+            Log.e(TAG, "ERROR: editSearchLocation is NULL!");
+        } else {
+            Log.d(TAG, "editSearchLocation found successfully");
+        }
+
+        // Ensure search bar is visible and fully opaque
+        if (searchBar != null) {
+            searchBar.setVisibility(View.VISIBLE);
+            searchBar.setAlpha(1f);
+            searchBar.bringToFront();
+            Log.d(TAG, "Search bar visibility set to VISIBLE, alpha set to 1.0");
+
+            // Force search bar to be visible after a short delay
+            // This ensures it's not being hidden by other initialization
+            searchBar.postDelayed(() -> {
+                if (searchBar != null) {
+                    searchBar.setVisibility(View.VISIBLE);
+                    searchBar.setAlpha(1f);
+                    searchBar.requestLayout();
+                    Log.d(TAG, "Search bar forced visible after delay");
+                }
+            }, 500);
+        }
+
         // Setup autocomplete adapter
         autocompleteAdapter = new PlacesAutocompleteAdapter(requireContext(), placesClient);
         editSearchLocation.setAdapter(autocompleteAdapter);
@@ -161,24 +193,44 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
         bottomSheetBehavior.addBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
             @Override
             public void onStateChanged(@NonNull View bottomSheet, int newState) {
+                String stateName = getStateName(newState);
+                Log.d(TAG, "Bottom sheet state changed to: " + stateName);
+
                 // Hide search bar when expanded, show when collapsed
                 if (newState == BottomSheetBehavior.STATE_EXPANDED) {
+                    Log.d(TAG, "Hiding search bar (expanded state)");
                     searchBar.animate().alpha(0f).setDuration(200).withEndAction(() ->
                             searchBar.setVisibility(View.GONE));
                 } else if (newState == BottomSheetBehavior.STATE_COLLAPSED ||
                            newState == BottomSheetBehavior.STATE_HALF_EXPANDED) {
+                    Log.d(TAG, "Showing search bar (collapsed/half-expanded state)");
                     searchBar.setVisibility(View.VISIBLE);
                     searchBar.animate().alpha(1f).setDuration(200);
+                }
+            }
+
+            private String getStateName(int state) {
+                switch (state) {
+                    case BottomSheetBehavior.STATE_COLLAPSED: return "COLLAPSED";
+                    case BottomSheetBehavior.STATE_EXPANDED: return "EXPANDED";
+                    case BottomSheetBehavior.STATE_DRAGGING: return "DRAGGING";
+                    case BottomSheetBehavior.STATE_SETTLING: return "SETTLING";
+                    case BottomSheetBehavior.STATE_HIDDEN: return "HIDDEN";
+                    case BottomSheetBehavior.STATE_HALF_EXPANDED: return "HALF_EXPANDED";
+                    default: return "UNKNOWN(" + state + ")";
                 }
             }
 
             @Override
             public void onSlide(@NonNull View bottomSheet, float slideOffset) {
                 // Gradually fade search bar as bottom sheet slides up
+                // slideOffset: 0 = collapsed, 1 = expanded
                 if (slideOffset > 0.5f) {
+                    // Start fading when sheet is more than 50% expanded
                     float alpha = 1f - ((slideOffset - 0.5f) * 2);
-                    searchBar.setAlpha(Math.max(0, alpha));
+                    searchBar.setAlpha(Math.max(0, Math.min(1, alpha)));
                 } else {
+                    // Keep fully visible when less than 50% expanded
                     searchBar.setAlpha(1f);
                 }
             }

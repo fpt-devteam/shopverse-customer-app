@@ -2,7 +2,7 @@
   "stores": [
     {
       "id": "store-a",
-      "name": "CellphoneS 218-220 Trần Quang Khải",
+      "name": "Shopverse 218-220 Trần Quang Khải",
       "latitude": 10.776889,
       "longitude": 106.700806,
       "address": "218-220 Trần Quang Khải, Phường Tân Định, Quận 1, TP. HCM",
@@ -10,7 +10,7 @@
     },
     {
       "id": "store-b",
-      "name": "CellphoneS 567 Lê Quang Định",
+      "name": "Shopverse 567 Lê Quang Định",
       "latitude": 10.78412,
       "longitude": 106.69482,
       "address": "567 Lê Quang Định, Phường 1, Quận Gò Vấp, TP. HCM",
@@ -18,7 +18,7 @@
     },
     {
       "id": "store-c",
-      "name": "CellphoneS 114 Phan Đăng Lưu",
+      "name": "Shopverse 114 Phan Đăng Lưu",
       "latitude": 10.79707,
       "longitude": 106.67773,
       "address": "114 Phan Đăng Lưu, Phường 3, Quận Phú Nhuận, TP. HCM",
@@ -26,7 +26,7 @@
     },
     {
       "id": "store-d",
-      "name": "CellphoneS 558 Trần Quang Khải",
+      "name": "Shopverse 558 Trần Quang Khải",
       "latitude": 10.77234,
       "longitude": 106.69856,
       "address": "558 Trần Quang Khải, Phường Tân Định, Quận 1, TP. HCM",
@@ -34,7 +34,7 @@
     },
     {
       "id": "store-e",
-      "name": "CellphoneS 377-379 Điện Biên Phủ",
+      "name": "Shopverse 377-379 Điện Biên Phủ",
       "latitude": 10.78045,
       "longitude": 106.69123,
       "address": "377-379 Điện Biên Phủ, Phường 25, Quận Bình Thạnh, TP. HCM",
@@ -42,10 +42,18 @@
     },
     {
       "id": "store-f",
-      "name": "CellphoneS 336 Xô Viết Nghệ Tĩnh",
+      "name": "Shopverse 336 Xô Viết Nghệ Tĩnh",
       "latitude": 10.79856,
       "longitude": 106.68234,
       "address": "336 Xô Viết Nghệ Tĩnh, Phường 25, Quận Bình Thạnh, TP. HCM",
+      "hours": "8h00 - 22h00 (tất cả các ngày trong tuần)"
+    },
+    {
+      "id": "store-k",
+      "name": "Shopverse 702 Võ Nguyên Giáp",
+      "latitude": 10.8437,
+      "longitude": 106.7717,
+      "address": "702 Võ Nguyên Giáp, Phường Hiệp Phú, TP Thủ Đức, TP. HCM",
       "hours": "8h00 - 22h00 (tất cả các ngày trong tuần)"
     }
   ]
