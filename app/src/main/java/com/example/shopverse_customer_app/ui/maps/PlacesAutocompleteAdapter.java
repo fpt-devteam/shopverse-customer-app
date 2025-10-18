@@ -9,6 +9,7 @@ import android.widget.Filterable;
 import androidx.annotation.NonNull;
 
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.tasks.Tasks;
 import com.google.android.libraries.places.api.Places;
 import com.google.android.libraries.places.api.model.AutocompletePrediction;
 import com.google.android.libraries.places.api.model.AutocompleteSessionToken;
@@ -19,6 +20,7 @@ import com.google.android.libraries.places.api.net.PlacesClient;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Adapter for AutoCompleteTextView that provides place suggestions from Google Places API.
@@ -64,59 +66,49 @@ public class PlacesAutocompleteAdapter extends ArrayAdapter<String> implements F
     @Override
     public Filter getFilter() {
         return new Filter() {
+            private static final long TIMEOUT_SEC = 5L;
+
             @Override
             protected FilterResults performFiltering(CharSequence constraint) {
                 FilterResults results = new FilterResults();
-
                 if (constraint == null || constraint.length() < 3) {
+                    results.values = new ArrayList<AutocompletePrediction>();
+                    results.count = 0;
                     return results;
                 }
-
                 try {
-                    // Bias results to Vietnam (Ho Chi Minh City area)
                     RectangularBounds bounds = RectangularBounds.newInstance(
-                            new LatLng(10.0, 105.0),  // Southwest corner of Vietnam region
-                            new LatLng(12.0, 108.0)   // Northeast corner
+                            new LatLng(10.0, 105.0),
+                            new LatLng(12.0, 108.0)
                     );
-
                     FindAutocompletePredictionsRequest request =
                             FindAutocompletePredictionsRequest.builder()
                                     .setSessionToken(token)
                                     .setQuery(constraint.toString())
                                     .setLocationBias(bounds)
-                                    .setCountries("VN")  // Restrict to Vietnam
-                                    .setTypeFilter(TypeFilter.REGIONS)  // Cities, districts, etc.
+                                    .setCountries("VN")
+                                    .setTypeFilter(TypeFilter.REGIONS)
                                     .build();
-
-                    placesClient.findAutocompletePredictions(request)
-                            .addOnSuccessListener(response -> {
-                                predictions.clear();
-                                predictions.addAll(response.getAutocompletePredictions());
-
-                                Log.d(TAG, "Found " + predictions.size() + " suggestions");
-
-                                results.values = predictions;
-                                results.count = predictions.size();
-
-                                // Notify on main thread
-                                notifyDataSetChanged();
-                            })
-                            .addOnFailureListener(exception -> {
-                                Log.e(TAG, "Error getting predictions", exception);
-                                predictions.clear();
-                                notifyDataSetInvalidated();
-                            });
-
+                    var response = Tasks.await(
+                            placesClient.findAutocompletePredictions(request),
+                            TIMEOUT_SEC, TimeUnit.SECONDS
+                    );
+                    List<AutocompletePrediction> list = response.getAutocompletePredictions();
+                    results.values = list != null ? list : new ArrayList<AutocompletePrediction>();
+                    results.count = list != null ? list.size() : 0;
                 } catch (Exception e) {
-                    Log.e(TAG, "Exception in autocomplete", e);
+                    results.values = new ArrayList<AutocompletePrediction>();
+                    results.count = 0;
                 }
-
                 return results;
             }
 
+            @SuppressWarnings("unchecked")
             @Override
             protected void publishResults(CharSequence constraint, FilterResults results) {
-                if (results != null && results.count > 0) {
+                predictions.clear();
+                if (results != null && results.values instanceof List && results.count > 0) {
+                    predictions.addAll((List<AutocompletePrediction>) results.values);
                     notifyDataSetChanged();
                 } else {
                     notifyDataSetInvalidated();
