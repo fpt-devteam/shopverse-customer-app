@@ -49,6 +49,8 @@ import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.libraries.places.api.Places;
 import com.google.android.libraries.places.api.net.PlacesClient;
 
+import java.lang.ref.WeakReference;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -61,6 +63,11 @@ import java.util.List;
  */
 public class MapsFragment extends Fragment implements OnMapReadyCallback {
     private static final String TAG = "MapsFragment";
+    private static final long ANIM_DURATION_MS = 200L;
+    private static final long SEARCHBAR_FORCE_SHOW_DELAY_MS = 500L;
+    private static final int PEEK_HEIGHT_DP = 160;
+    private static final float HALF_EXPANDED_RATIO = 0.5f;
+    private static final float FADE_START_OFFSET = 0.5f;
 
     // UI Components
     private GoogleMap mMap;
@@ -96,168 +103,214 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
         return inflater.inflate(R.layout.fragment_maps, container, false);
     }
 
-    @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
+    /* ---------- Step 1: Services ---------- */
+    private void initServices() {
+        Context ctx = requireContext();
 
-        // Initialize repository and helpers
-        storeRepository = new StoreRepository(requireContext());
-        locationHelper = new LocationHelper(requireContext());
-        geocodingHelper = new GeocodingHelper(requireContext());
+        storeRepository  = new StoreRepository(ctx);
+        locationHelper   = new LocationHelper(ctx);
+        geocodingHelper  = new GeocodingHelper(ctx);
 
-        // Initialize Google Maps API key (read from BuildConfig)
         String mapsApiKey = com.example.shopverse_customer_app.BuildConfig.GOOGLE_MAPS_API_KEY;
-        directionsHelper = new DirectionsHelper(mapsApiKey);
+        directionsHelper  = new DirectionsHelper(mapsApiKey);
 
-        // Initialize Places API
         if (!Places.isInitialized()) {
-            Places.initialize(requireContext(), mapsApiKey);
+            Places.initialize(ctx, mapsApiKey);
         }
-        placesClient = Places.createClient(requireContext());
+        placesClient = Places.createClient(ctx);
+    }
 
-        // Get search bar reference and setup
-        searchBar = view.findViewById(R.id.search_bar);
-        editSearchLocation = view.findViewById(R.id.edit_search_location);
-        btnClearSearch = view.findViewById(R.id.btn_clear_search);
+    /* ---------- Step 2: Bind Views ---------- */
+    private void bindViews(@NonNull View root) {
+        searchBar          = root.findViewById(R.id.search_bar);
+        editSearchLocation = root.findViewById(R.id.edit_search_location);
+        btnClearSearch     = root.findViewById(R.id.btn_clear_search);
 
-        // Debug: Check if views are found
-        if (searchBar == null) {
-            Log.e(TAG, "ERROR: searchBar is NULL!");
-        } else {
-            Log.d(TAG, "searchBar found successfully");
-        }
-
-        if (editSearchLocation == null) {
-            Log.e(TAG, "ERROR: editSearchLocation is NULL!");
-        } else {
-            Log.d(TAG, "editSearchLocation found successfully");
-        }
-
-        // Ensure search bar is visible and fully opaque
-        if (searchBar != null) {
-            searchBar.setVisibility(View.VISIBLE);
-            searchBar.setAlpha(1f);
-            searchBar.bringToFront();
-            Log.d(TAG, "Search bar visibility set to VISIBLE, alpha set to 1.0");
-
-            // Force search bar to be visible after a short delay
-            // This ensures it's not being hidden by other initialization
-            searchBar.postDelayed(() -> {
-                if (searchBar != null) {
-                    searchBar.setVisibility(View.VISIBLE);
-                    searchBar.setAlpha(1f);
-                    searchBar.requestLayout();
-                    Log.d(TAG, "Search bar forced visible after delay");
-                }
-            }, 500);
-        }
-
-        // Setup autocomplete adapter
-        autocompleteAdapter = new PlacesAutocompleteAdapter(requireContext(), placesClient);
-        editSearchLocation.setAdapter(autocompleteAdapter);
-
-        setupSearchBar();
-
-        // Initialize bottom sheet
-        View bottomSheet = view.findViewById(R.id.bottom_sheet);
+        View bottomSheet   = root.findViewById(R.id.bottom_sheet);
         if (bottomSheet == null) {
             Log.e(TAG, "Bottom sheet is null!");
             return;
         }
-
-        // Ensure bottom sheet is visible
         bottomSheet.setVisibility(View.VISIBLE);
-
         bottomSheetBehavior = BottomSheetBehavior.from(bottomSheet);
 
-        // Calculate peek height in pixels (convert dp to px for better compatibility)
-        int peekHeightDp = 160;
-        float density = getResources().getDisplayMetrics().density;
-        int peekHeightPx = (int) (peekHeightDp * density);
+        txtStoreTitle      = root.findViewById(R.id.txt_selected_store_title);
+        txtStoreAddress    = root.findViewById(R.id.txt_selected_store_address);
+        txtStoreHours      = root.findViewById(R.id.txt_selected_store_hours);
+        btnNearestStore    = root.findViewById(R.id.btn_bottom_nearest_store);
+        btnGetDirections   = root.findViewById(R.id.btn_bottom_get_directions);
+        recyclerStores     = root.findViewById(R.id.recycler_stores);
+    }
 
-        Log.d(TAG, "Setting peek height: " + peekHeightPx + "px (density: " + density + ")");
+    /* ---------- Step 3: Search Bar ---------- */
+    private void configureSearchBar() {
+        if (searchBar == null || editSearchLocation == null) {
+            Log.e(TAG, "Search views are null");
+            return;
+        }
 
+        // Ensure visible & on top
+        searchBar.setVisibility(View.VISIBLE);
+        searchBar.setAlpha(1f);
+        searchBar.bringToFront();
+
+        // Force show after short delay to avoid being overlapped
+        searchBar.postDelayed(() -> {
+            searchBar.setVisibility(View.VISIBLE);
+            searchBar.setAlpha(1f);
+            searchBar.requestLayout();
+            Log.d(TAG, "Search bar forced visible after delay");
+        }, SEARCHBAR_FORCE_SHOW_DELAY_MS);
+
+        // Autocomplete (Places)
+        autocompleteAdapter = new PlacesAutocompleteAdapter(requireContext(), placesClient);
+        editSearchLocation.setAdapter(autocompleteAdapter);
+
+        // Any extra behaviors you had in setupSearchBar() — keep them here
+        setupSearchBarBehaviors();
+    }
+
+    private void setupSearchBarBehaviors() {
+        setupClearButtonBehavior();
+        setupSearchActionBehavior();
+    }
+    private abstract static class SimpleTextWatcher implements TextWatcher {
+        @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+        @Override public void afterTextChanged(Editable s) {}
+    }
+    /* ----- 1️⃣ Clear Button Visibility ----- */
+    private void setupClearButtonBehavior() {
+        // Hiện/Giấu nút clear khi người dùng nhập text
+        editSearchLocation.addTextChangedListener(new SimpleTextWatcher() {
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                btnClearSearch.setVisibility(s.length() > 0 ? View.VISIBLE : View.GONE);
+            }
+        });
+
+        // Khi nhấn nút clear → xoá text + ẩn bàn phím
+        btnClearSearch.setOnClickListener(v -> {
+            editSearchLocation.setText("");
+            hideKeyboard();
+        });
+    }
+
+    /* ----- 2️⃣ Search Action (nhấn enter hoặc search) ----- */
+    private void setupSearchActionBehavior() {
+        editSearchLocation.setOnEditorActionListener((v, actionId, event) -> {
+            boolean isSearchAction = actionId == EditorInfo.IME_ACTION_SEARCH;
+            boolean isEnterPressed = event != null &&
+                    event.getKeyCode() == KeyEvent.KEYCODE_ENTER &&
+                    event.getAction() == KeyEvent.ACTION_DOWN;
+
+            if (isSearchAction || isEnterPressed) {
+                performLocationSearch();
+                return true;
+            }
+            return false;
+        });
+    }
+
+
+    /* ---------- Step 4: Bottom Sheet ---------- */
+    private void configureBottomSheet(@NonNull View root) {
+        View bottomSheet   = root.findViewById(R.id.bottom_sheet);
+        if (bottomSheet == null) {
+            Log.e(TAG, "Bottom sheet is null!");
+            return;
+        }
+        if (bottomSheetBehavior == null || bottomSheet == null) return;
+
+        int peekHeightPx = (int) (PEEK_HEIGHT_DP * getResources().getDisplayMetrics().density);
         bottomSheetBehavior.setPeekHeight(peekHeightPx);
         bottomSheetBehavior.setHideable(false);
         bottomSheetBehavior.setFitToContents(false);
-        bottomSheetBehavior.setHalfExpandedRatio(0.5f);
+        bottomSheetBehavior.setHalfExpandedRatio(HALF_EXPANDED_RATIO);
         bottomSheetBehavior.setSkipCollapsed(false);
 
-        // Force state after layout
-        bottomSheet.post(() -> {
-            Log.d(TAG, "Forcing bottom sheet to collapsed state");
-            bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
-        });
+        // Start collapsed after layout — dùng chính bottomSheet.post(...)
+        bottomSheet.post(() -> bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED));
 
-        // Add bottom sheet callback to hide search bar when expanded
         bottomSheetBehavior.addBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
             @Override
-            public void onStateChanged(@NonNull View bottomSheet, int newState) {
-                String stateName = getStateName(newState);
-                Log.d(TAG, "Bottom sheet state changed to: " + stateName);
-
-                // Hide search bar when expanded, show when collapsed
+            public void onStateChanged(@NonNull View bs, int newState) {
+                if (searchBar == null) return;
                 if (newState == BottomSheetBehavior.STATE_EXPANDED) {
-                    Log.d(TAG, "Hiding search bar (expanded state)");
-                    searchBar.animate().alpha(0f).setDuration(200).withEndAction(() ->
-                            searchBar.setVisibility(View.GONE));
-                } else if (newState == BottomSheetBehavior.STATE_COLLAPSED ||
-                           newState == BottomSheetBehavior.STATE_HALF_EXPANDED) {
-                    Log.d(TAG, "Showing search bar (collapsed/half-expanded state)");
+                    searchBar.animate().alpha(0f)
+                            .setDuration(ANIM_DURATION_MS)
+                            .withEndAction(() -> searchBar.setVisibility(View.GONE));
+                } else if (newState == BottomSheetBehavior.STATE_COLLAPSED
+                        || newState == BottomSheetBehavior.STATE_HALF_EXPANDED) {
                     searchBar.setVisibility(View.VISIBLE);
-                    searchBar.animate().alpha(1f).setDuration(200);
-                }
-            }
-
-            private String getStateName(int state) {
-                switch (state) {
-                    case BottomSheetBehavior.STATE_COLLAPSED: return "COLLAPSED";
-                    case BottomSheetBehavior.STATE_EXPANDED: return "EXPANDED";
-                    case BottomSheetBehavior.STATE_DRAGGING: return "DRAGGING";
-                    case BottomSheetBehavior.STATE_SETTLING: return "SETTLING";
-                    case BottomSheetBehavior.STATE_HIDDEN: return "HIDDEN";
-                    case BottomSheetBehavior.STATE_HALF_EXPANDED: return "HALF_EXPANDED";
-                    default: return "UNKNOWN(" + state + ")";
+                    searchBar.animate().alpha(1f).setDuration(ANIM_DURATION_MS);
                 }
             }
 
             @Override
-            public void onSlide(@NonNull View bottomSheet, float slideOffset) {
-                // Gradually fade search bar as bottom sheet slides up
-                // slideOffset: 0 = collapsed, 1 = expanded
-                if (slideOffset > 0.5f) {
-                    // Start fading when sheet is more than 50% expanded
-                    float alpha = 1f - ((slideOffset - 0.5f) * 2);
-                    searchBar.setAlpha(Math.max(0, Math.min(1, alpha)));
+            public void onSlide(@NonNull View bs, float slideOffset) {
+                if (searchBar == null) return;
+                if (slideOffset > FADE_START_OFFSET) {
+                    float alpha = 1f - ((slideOffset - FADE_START_OFFSET) * 2f);
+                    searchBar.setAlpha(Math.max(0f, Math.min(1f, alpha)));
                 } else {
-                    // Keep fully visible when less than 50% expanded
                     searchBar.setAlpha(1f);
                 }
             }
         });
+    }
 
-        // Bind UI components from bottom sheet
-        txtStoreTitle = view.findViewById(R.id.txt_selected_store_title);
-        txtStoreAddress = view.findViewById(R.id.txt_selected_store_address);
-        txtStoreHours = view.findViewById(R.id.txt_selected_store_hours);
-        btnNearestStore = view.findViewById(R.id.btn_bottom_nearest_store);
-        btnGetDirections = view.findViewById(R.id.btn_bottom_get_directions);
-        recyclerStores = view.findViewById(R.id.recycler_stores);
 
-        // Set button click listeners
-        btnNearestStore.setOnClickListener(v -> findNearestStore());
-        btnGetDirections.setOnClickListener(v -> openDirections());
+    // Helper to get underlying bottom sheet view from behavior (API shim)
+    private static @Nullable View getBottomSheet(@NonNull BottomSheetBehavior<View> behavior) {
+        try {
+            Field f = BottomSheetBehavior.class.getDeclaredField("viewRef");
+            f.setAccessible(true);
+            WeakReference<View> ref = (WeakReference<View>) f.get(behavior);
+            return ref != null ? ref.get() : null;
+        } catch (Exception ignore) { return null; }
+    }
 
-        // Setup RecyclerView with adapter
+    /* ---------- Step 5: List & Actions ---------- */
+    private void configureStoreList() {
         storeListAdapter = new StoreListAdapter(this::onStoreItemClick);
         recyclerStores.setAdapter(storeListAdapter);
 
-        // Initialize map
-        SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager()
-                .findFragmentById(R.id.map);
+        btnNearestStore.setOnClickListener(v -> findNearestStore());
+        btnGetDirections.setOnClickListener(v -> openDirections());
+    }
+
+    /* ---------- Step 6: Map ---------- */
+    private void initMap() {
+        SupportMapFragment mapFragment = (SupportMapFragment)
+                getChildFragmentManager().findFragmentById(R.id.map);
         if (mapFragment != null) {
             mapFragment.getMapAsync(this);
+        } else {
+            Log.e(TAG, "Map fragment is null");
         }
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        // 1) Init services (repo, location, geocoding, directions, places)
+        initServices();
+
+        // 2) Bind views (search bar, inputs, bottomsheet, recycler, buttons...)
+        bindViews(view);
+
+        // 3) Configure search bar (visibility + autocomplete + behaviors)
+        configureSearchBar();
+
+        // 4) Configure bottom sheet (peek height, state, callbacks)
+        configureBottomSheet(view);
+
+        // 5) Configure list + actions (adapter + click listeners)
+        configureStoreList();
+
+        // 6) Initialize Google Map
+        initMap();
     }
 
     /**
@@ -676,82 +729,137 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
     /**
      * Sets up the search bar with text watchers and search functionality.
      */
-    private void setupSearchBar() {
-        // Text watcher to show/hide clear button
-        editSearchLocation.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                btnClearSearch.setVisibility(s.length() > 0 ? View.VISIBLE : View.GONE);
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {}
-        });
-
-        // Clear button click
-        btnClearSearch.setOnClickListener(v -> {
-            editSearchLocation.setText("");
-            hideKeyboard();
-        });
-
-        // Handle search action (when user presses search/enter on keyboard)
-        editSearchLocation.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == EditorInfo.IME_ACTION_SEARCH ||
-                    (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER &&
-                            event.getAction() == KeyEvent.ACTION_DOWN)) {
-                performLocationSearch();
-                return true;
-            }
-            return false;
-        });
-    }
+//    private void setupSearchBar() {
+//        // Text watcher to show/hide clear button
+//        editSearchLocation.addTextChangedListener(new TextWatcher() {
+//            @Override
+//            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+//
+//            @Override
+//            public void onTextChanged(CharSequence s, int start, int before, int count) {
+//                btnClearSearch.setVisibility(s.length() > 0 ? View.VISIBLE : View.GONE);
+//            }
+//
+//            @Override
+//            public void afterTextChanged(Editable s) {}
+//        });
+//
+//        // Clear button click
+//        btnClearSearch.setOnClickListener(v -> {
+//            editSearchLocation.setText("");
+//            hideKeyboard();
+//        });
+//
+//        // Handle search action (when user presses search/enter on keyboard)
+//        editSearchLocation.setOnEditorActionListener((v, actionId, event) -> {
+//            if (actionId == EditorInfo.IME_ACTION_SEARCH ||
+//                    (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER &&
+//                            event.getAction() == KeyEvent.ACTION_DOWN)) {
+//                performLocationSearch();
+//                return true;
+//            }
+//            return false;
+//        });
+//    }
 
     /**
      * Performs search for stores near the entered location.
      */
-    private void performLocationSearch() {
-        String searchQuery = editSearchLocation.getText().toString().trim();
+//    private void performLocationSearch() {
+//        String searchQuery = editSearchLocation.getText().toString().trim();
+//
+//        if (searchQuery.isEmpty()) {
+//            Toast.makeText(requireContext(), "Please enter a location", Toast.LENGTH_SHORT).show();
+//            return;
+//        }
+//
+//        hideKeyboard();
+//
+//        // Show progress
+//        Toast.makeText(requireContext(), "Searching for: " + searchQuery, Toast.LENGTH_SHORT).show();
+//
+//        // Geocode the address
+//        geocodingHelper.getLocationFromAddress(searchQuery, new GeocodingHelper.GeocodingCallback() {
+//            @Override
+//            public void onSuccess(LatLng searchLocation, String formattedAddress) {
+//                Log.d(TAG, "Search location found: " + formattedAddress);
+//
+//                // Find nearest store to the searched location
+//                Store nearestStore = findNearestStoreToLocation(
+//                        searchLocation.latitude,
+//                        searchLocation.longitude
+//                );
+//
+//                if (nearestStore != null) {
+//                    // Show the nearest store
+//                    showNearestStoreToSearchLocation(nearestStore, searchLocation, formattedAddress);
+//                } else {
+//                    Toast.makeText(requireContext(),
+//                            "No stores found near " + formattedAddress,
+//                            Toast.LENGTH_LONG).show();
+//                }
+//            }
+//
+//            @Override
+//            public void onFailure(String errorMessage) {
+//                Toast.makeText(requireContext(), errorMessage, Toast.LENGTH_LONG).show();
+//            }
+//        });
+//    }
 
-        if (searchQuery.isEmpty()) {
-            Toast.makeText(requireContext(), "Please enter a location", Toast.LENGTH_SHORT).show();
+    private void performLocationSearch() {
+        performLocationSearch(editSearchLocation != null ? editSearchLocation.getText().toString() : null);
+    }
+
+    private void performLocationSearch(@Nullable String rawQuery) {
+        final String query = (rawQuery == null) ? "" : rawQuery.trim();
+
+        if (query.isEmpty()) {
+            showToast("Please enter a location");
             return;
         }
 
         hideKeyboard();
+        showToast("Searching for: " + query);
 
-        // Show progress
-        Toast.makeText(requireContext(), "Searching for: " + searchQuery, Toast.LENGTH_SHORT).show();
+        if (geocodingHelper == null) {
+            Log.w(TAG, "GeocodingHelper is null");
+            showToast("Search service is not available. Please try again.");
+            return;
+        }
 
-        // Geocode the address
-        geocodingHelper.getLocationFromAddress(searchQuery, new GeocodingHelper.GeocodingCallback() {
+        geocodingHelper.getLocationFromAddress(query, new GeocodingHelper.GeocodingCallback() {
             @Override
-            public void onSuccess(LatLng searchLocation, String formattedAddress) {
-                Log.d(TAG, "Search location found: " + formattedAddress);
+            public void onSuccess(@NonNull LatLng searchLocation, @NonNull String formattedAddress) {
+                Log.d(TAG, "Search location found: " + formattedAddress + " (" +
+                        searchLocation.latitude + ", " + searchLocation.longitude + ")");
 
-                // Find nearest store to the searched location
                 Store nearestStore = findNearestStoreToLocation(
                         searchLocation.latitude,
                         searchLocation.longitude
                 );
 
                 if (nearestStore != null) {
-                    // Show the nearest store
                     showNearestStoreToSearchLocation(nearestStore, searchLocation, formattedAddress);
-                } else {
-                    Toast.makeText(requireContext(),
-                            "No stores found near " + formattedAddress,
-                            Toast.LENGTH_LONG).show();
+                    return;
                 }
+
+                showToast("No stores found near " + formattedAddress);
             }
 
             @Override
-            public void onFailure(String errorMessage) {
-                Toast.makeText(requireContext(), errorMessage, Toast.LENGTH_LONG).show();
+            public void onFailure(@NonNull String errorMessage) {
+                Log.w(TAG, "Geocoding failed: " + errorMessage);
+                showToast(errorMessage);
             }
         });
+    }
+
+    private void showToast(@NonNull String msg) {
+        Context ctx = getContext();
+        if (ctx != null) {
+            Toast.makeText(ctx, msg, Toast.LENGTH_SHORT).show();
+        }
     }
 
     /**
