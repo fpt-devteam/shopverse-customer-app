@@ -40,4 +40,8 @@
 
     <!-- Registration Strings -->
     <string name="registration_success_message">Đăng ký thành công! Vui lòng kiểm tra email để xác nhận tài khoản.</string>
+
+    <!-- Home Strings -->
+    <string name="category_icon">Category Icon</string>
+    <string name="app_logo">App Logo</string>
 </resources>

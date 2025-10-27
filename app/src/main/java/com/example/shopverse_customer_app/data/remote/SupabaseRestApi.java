@@ -1,5 +1,8 @@
 package com.example.shopverse_customer_app.data.remote;
 
+import com.example.shopverse_customer_app.data.model.Brand;
+import com.example.shopverse_customer_app.data.model.Category;
+import com.example.shopverse_customer_app.data.model.Product;
 import com.example.shopverse_customer_app.data.model.Profile;
 
 import java.util.List;
@@ -45,4 +48,45 @@ public interface SupabaseRestApi {
             @Query("user_id") String userIdFilter,
             @Body Profile profile
     );
+
+    /**
+     * Get all categories from categories table
+     * GET /rest/v1/categories?select=*
+     */
+    @GET("rest/v1/categories")
+    Call<List<Category>> getCategories(
+            @Query("select") String select
+    );
+
+    /**
+     * Get brands for a specific category from categories_brands table with join
+     * GET /rest/v1/categories_brands?select=brands(*)&category_id=eq.{id}
+     */
+    @GET("rest/v1/categories_brands")
+    Call<List<BrandResponse>> getBrandsByCategory(
+            @Query("select") String select,
+            @Query("category_id") String categoryIdFilter
+    );
+
+    /**
+     * Get products by category with optional brand filter
+     * GET /rest/v1/products?select=*,brands(*),categories(*)&category_id=eq.{id}&status=eq.active
+     * Optional: &brand_id=eq.{brandId}
+     */
+    @GET("rest/v1/products")
+    Call<List<Product>> getProducts(
+            @Query("select") String select,
+            @Query("category_id") String categoryIdFilter,
+            @Query("brand_id") String brandIdFilter,
+            @Query("status") String statusFilter,
+            @Query("order") String order
+    );
+
+    /**
+     * Inner class to handle nested brand response from join query
+     */
+    class BrandResponse {
+        @com.google.gson.annotations.SerializedName("brands")
+        public Brand brand;
+    }
 }
