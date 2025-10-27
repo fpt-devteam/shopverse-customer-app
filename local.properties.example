@@ -17,3 +17,5 @@ sdk.dir=/path/to/your/android/sdk
 # Get your key from: https://console.cloud.google.com/google/maps-apis/credentials
 # IMPORTANT: DO NOT commit local.properties with your actual API key!
 GOOGLE_MAPS_API_KEY=YOUR_API_KEY_HERE
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key

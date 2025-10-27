@@ -5,13 +5,15 @@ plugins {
     alias(libs.plugins.android.application)
 }
 
-// Read Google Maps API Key from local.properties
+// Read API Keys from local.properties
 val localProperties = Properties()
 val localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) {
     localProperties.load(FileInputStream(localPropertiesFile))
 }
 val mapsApiKey: String = localProperties.getProperty("GOOGLE_MAPS_API_KEY") ?: "YOUR_API_KEY_HERE"
+val supabaseUrl: String = localProperties.getProperty("SUPABASE_URL") ?: "https://shopverse.supabase.co"
+val supabaseAnonKey: String = localProperties.getProperty("SUPABASE_ANON_KEY") ?: "YOUR_SUPABASE_ANON_KEY"
 
 android {
     namespace = "com.example.shopverse_customer_app"
@@ -26,11 +28,13 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // Inject API key as a manifest placeholder
+        // Inject API keys as manifest placeholders
         manifestPlaceholders["GOOGLE_MAPS_API_KEY"] = mapsApiKey
 
-        // Also make it available as a BuildConfig field (optional, for programmatic access)
+        // Make API keys available as BuildConfig fields
         buildConfigField("String", "GOOGLE_MAPS_API_KEY", "\"$mapsApiKey\"")
+        buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
     }
 
     buildTypes {
@@ -72,6 +76,18 @@ dependencies {
 
     // OkHttp for API calls (Directions API)
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+    // Retrofit for Supabase REST API
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+
+    // EncryptedSharedPreferences for secure token storage
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+
+    // Glide for image loading
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+    annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)

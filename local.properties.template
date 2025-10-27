@@ -1,0 +1,16 @@
+# Local Properties Template
+# Copy this file to local.properties and fill in your actual values
+# local.properties is gitignored and will not be committed to version control
+
+## Google Maps API Key
+## Get your key from: https://console.cloud.google.com/google/maps-apis
+GOOGLE_MAPS_API_KEY=YOUR_GOOGLE_MAPS_API_KEY_HERE
+
+## Supabase Configuration
+## Get these from your Supabase project settings: https://app.supabase.com/project/_/settings/api
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-public-key-here
+
+## Example with real format (DO NOT USE THESE - THEY WON'T WORK):
+# SUPABASE_URL=https://abcdefghijk.supabase.co
+# SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFiY2RlZmdoaWprIiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODc0Njc4MTcsImV4cCI6MjAwMzA0MzgxN30.abc123def456

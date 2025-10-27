@@ -3,7 +3,10 @@
     "allow": [
       "Bash(git check-ignore:*)",
       "Bash(../gradlew:*)",
-      "Bash(./gradlew:*)"
+      "Bash(./gradlew:*)",
+      "Bash(dir \"C:\\Users\\NHATTHANG\\FptUniversity\\PRM392\\shopverse-customer-app\\app\\src\\main\\res\")",
+      "Bash(findstr:*)",
+      "Bash(dir:*)"
     ],
     "deny": [],
     "ask": []

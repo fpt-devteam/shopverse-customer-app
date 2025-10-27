@@ -1,9 +1,10 @@
 <resources>
     <string name="app_name">shopverse-customer-app</string>
-    <string name="title_home">Home</string>
-    <string name="title_dashboard">Dashboard</string>
+    <string name="title_home">Trang chủ</string>
+    <string name="title_dashboard">Danh mục</string>
     <string name="title_notifications">Notifications</string>
-    <string name="title_maps">Store Locator</string>
+    <string name="title_maps">Cửa hàng</string>
+    <string name="title_account">Tài khoản</string>
 
     <!-- Map UI Strings -->
     <string name="search_hint">Ban muốn tìm shop gần khu vực nào?</string>
@@ -14,4 +15,29 @@
     <string name="location_unavailable">Location unavailable</string>
     <string name="nearest_store_found">Nearest store found</string>
     <string name="stores_open_hours">Mở cửa: %s</string>
+
+    <!-- Account Strings -->
+    <string name="welcome_message">Chào mừng bạn đến với Shopverse</string>
+    <string name="become_member_message">Nhập hội thành viên Smember để không bỏ lỡ các ưu đãi hấp dẫn.</string>
+    <string name="login">Đăng nhập</string>
+    <string name="register">Đăng ký</string>
+    <string name="or">hoặc</string>
+    <string name="membership_benefits">Hạng thành viên</string>
+    <string name="discount">Mã giảm giá</string>
+    <string name="purchase_history">Lịch sử mua hàng</string>
+    <string name="s_student">S-Student</string>
+    <string name="history_section">Lịch sử</string>
+    <string name="warranty_tracking">Tra cứu bảo hành</string>
+    <string name="benefits_section">Ưu đãi</string>
+    <string name="s_edu">S-Edu</string>
+    <string name="account_section">Tài khoản</string>
+    <string name="personal_info">Thông tin cá nhân</string>
+    <string name="address">Sổ địa chỉ</string>
+    <string name="linked_accounts">Liên kết tài khoản</string>
+    <string name="change_password">Đổi mật khẩu</string>
+    <string name="logout">Đăng xuất</string>
+    <string name="search_placeholder">Bạn muốn mua gì hôm nay?</string>
+
+    <!-- Registration Strings -->
+    <string name="registration_success_message">Đăng ký thành công! Vui lòng kiểm tra email để xác nhận tài khoản.</string>
 </resources>
