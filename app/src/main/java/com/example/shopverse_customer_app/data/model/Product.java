@@ -2,12 +2,13 @@ package com.example.shopverse_customer_app.data.model;
 
 import com.google.gson.annotations.SerializedName;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
  * Product model representing products table in Supabase
  */
-public class Product {
+public class Product implements Serializable {
 
     @SerializedName("product_id")
     private String productId;

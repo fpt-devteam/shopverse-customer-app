@@ -39,7 +39,7 @@
                         android:id="@+id/backButton"
                         android:layout_width="24dp"
                         android:layout_height="24dp"
-                        android:src="@drawable/ic_notifications_black_24dp"
+                        android:src="@drawable/ic_back_arrow"
                         android:contentDescription="Back"
                         android:clickable="true"
                         android:focusable="true"

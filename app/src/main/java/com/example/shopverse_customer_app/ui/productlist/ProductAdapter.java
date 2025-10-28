@@ -74,6 +74,7 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
         private final TextView installmentBadge;
         private final ImageView favoriteIcon;
         private final TextView productName;
+        private final TextView brandName;
         private final TextView currentPrice;
         private final TextView originalPrice;
         private final TextView studentPrice;
@@ -86,6 +87,7 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
             installmentBadge = itemView.findViewById(R.id.installmentBadge);
             favoriteIcon = itemView.findViewById(R.id.favoriteIcon);
             productName = itemView.findViewById(R.id.productName);
+            brandName = itemView.findViewById(R.id.brandName);
             currentPrice = itemView.findViewById(R.id.currentPrice);
             originalPrice = itemView.findViewById(R.id.originalPrice);
             studentPrice = itemView.findViewById(R.id.studentPrice);
@@ -95,6 +97,14 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
         public void bind(Product product, OnProductClickListener listener, NumberFormat currencyFormat) {
             // Set product name
             productName.setText(product.getProductName());
+
+            // Set brand name
+            if (product.getBrand() != null && product.getBrand().getBrandName() != null) {
+                brandName.setText(product.getBrand().getBrandName());
+                brandName.setVisibility(View.VISIBLE);
+            } else {
+                brandName.setVisibility(View.GONE);
+            }
 
             // Set current price
             String priceText = formatPrice(product.getUnitPrice());

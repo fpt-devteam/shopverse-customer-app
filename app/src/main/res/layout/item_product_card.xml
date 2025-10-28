@@ -91,6 +91,18 @@
             android:maxLines="2"
             android:ellipsize="end"/>
 
+        <!-- Brand Name -->
+        <TextView
+            android:id="@+id/brandName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="ASUS"
+            android:textSize="12sp"
+            android:textColor="#666666"
+            android:maxLines="1"
+            android:ellipsize="end"/>
+
         <!-- Price Container -->
         <LinearLayout
             android:layout_width="match_parent"

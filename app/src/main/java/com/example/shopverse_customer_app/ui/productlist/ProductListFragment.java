@@ -279,11 +279,23 @@ public class ProductListFragment extends Fragment
 
     @Override
     public void onProductClick(Product product) {
-        // TODO: Navigate to product detail
-        Toast.makeText(getContext(),
-                "Sản phẩm: " + product.getProductName(),
-                Toast.LENGTH_SHORT).show();
+        // Navigate to product detail
+        navigateToProductDetail(product);
         Log.d(TAG, "Product clicked: " + product.getProductName());
+    }
+
+    /**
+     * Navigate to ProductDetailFragment with the selected product
+     */
+    private void navigateToProductDetail(Product product) {
+        if (getActivity() != null) {
+            getActivity().getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.nav_host_fragment_activity_main,
+                            com.example.shopverse_customer_app.ui.productdetail.ProductDetailFragment.newInstance(product))
+                    .addToBackStack(null)
+                    .commit();
+        }
     }
 
     @Override
