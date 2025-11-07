@@ -20,6 +20,7 @@ public class RetrofitClient {
     private final Retrofit retrofit;
     private SupabaseAuthApi authApi;
     private SupabaseRestApi restApi;
+    private PaymentService paymentService;
 
     /**
      * Private constructor - Singleton pattern
@@ -98,6 +99,16 @@ public class RetrofitClient {
      */
     public void clearAccessToken() {
         authInterceptor.clearAccessToken();
+    }
+
+    /**
+     * Get PaymentService instance
+     */
+    public PaymentService getPaymentService() {
+        if (paymentService == null) {
+            paymentService = retrofit.create(PaymentService.class);
+        }
+        return paymentService;
     }
 
     /**

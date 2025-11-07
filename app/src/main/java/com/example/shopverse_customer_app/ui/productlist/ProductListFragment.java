@@ -1,16 +1,21 @@
 package com.example.shopverse_customer_app.ui.productlist;
 
+import android.content.Context;
 import android.os.Bundle;
+import android.text.InputType;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
@@ -22,6 +27,9 @@ import com.example.shopverse_customer_app.data.model.Brand;
 import com.example.shopverse_customer_app.data.model.Category;
 import com.example.shopverse_customer_app.data.model.Product;
 import com.google.android.material.chip.Chip;
+
+import androidx.navigation.NavController;
+import androidx.navigation.Navigation;
 
 import java.util.List;
 
@@ -108,9 +116,46 @@ public class ProductListFragment extends Fragment
 
     private void setupSearchBar(View view) {
         view.findViewById(R.id.searchBar).setOnClickListener(v -> {
-            // TODO: Implement search functionality
-            Toast.makeText(getContext(), "Tìm kiếm đang được phát triển", Toast.LENGTH_SHORT).show();
+            showSearchDialog();
         });
+    }
+
+    private void showSearchDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+        builder.setTitle("Tìm kiếm sản phẩm");
+
+        // Set up the input
+        final EditText input = new EditText(requireContext());
+        input.setInputType(InputType.TYPE_CLASS_TEXT);
+        input.setHint("Nhập tên sản phẩm...");
+        input.setPadding(50, 30, 50, 30);
+        builder.setView(input);
+
+        // Set up the buttons
+        builder.setPositiveButton("Tìm kiếm", (dialog, which) -> {
+            String query = input.getText().toString().trim();
+            if (!query.isEmpty()) {
+                viewModel.searchProducts(query);
+                Toast.makeText(getContext(), "Đang tìm: " + query, Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        builder.setNegativeButton("Hủy", (dialog, which) -> dialog.cancel());
+
+        builder.setNeutralButton("Xóa tìm kiếm", (dialog, which) -> {
+            viewModel.clearSearch();
+            Toast.makeText(getContext(), "Đã xóa tìm kiếm", Toast.LENGTH_SHORT).show();
+        });
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+
+        // Auto-focus and show keyboard
+        input.requestFocus();
+        InputMethodManager imm = (InputMethodManager) requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (imm != null) {
+            imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
+        }
     }
 
     private void setupProductsRecyclerView() {
@@ -121,7 +166,6 @@ public class ProductListFragment extends Fragment
         GridLayoutManager gridLayoutManager = new GridLayoutManager(getContext(), 2);
         productsRecyclerView.setLayoutManager(gridLayoutManager);
         productsRecyclerView.setAdapter(productAdapter);
-        productsRecyclerView.setHasFixedSize(true);
     }
 
     private void setupFilterButtons() {
@@ -185,6 +229,15 @@ public class ProductListFragment extends Fragment
         // Observe brands
         viewModel.getBrands().observe(getViewLifecycleOwner(), this::updateBrandChips);
 
+        // Observe selected brands (to refresh chip states)
+        viewModel.getSelectedBrands().observe(getViewLifecycleOwner(), selectedBrands -> {
+            // Refresh chips when selection changes
+            List<Brand> allBrands = viewModel.getBrands().getValue();
+            if (allBrands != null) {
+                updateBrandChips(allBrands);
+            }
+        });
+
         // Observe products
         viewModel.getProducts().observe(getViewLifecycleOwner(), products -> {
             if (products != null) {
@@ -226,13 +279,18 @@ public class ProductListFragment extends Fragment
             return;
         }
 
+        // Check if no brands are selected (show "All" as selected)
+        List<Brand> selectedBrands = viewModel.getSelectedBrands().getValue();
+        boolean noSelection = (selectedBrands == null || selectedBrands.isEmpty());
+
         // Add "All" chip first
-        Chip allChip = createBrandChip("Tất cả", null, true);
+        Chip allChip = createBrandChip("Tất cả", null, noSelection);
         brandChipsContainer.addView(allChip);
 
-        // Add brand chips
+        // Add brand chips with dynamic selection state
         for (Brand brand : brands) {
-            Chip chip = createBrandChip(brand.getBrandName(), brand, false);
+            boolean isSelected = viewModel.isBrandSelected(brand);
+            Chip chip = createBrandChip(brand.getBrandName(), brand, isSelected);
             brandChipsContainer.addView(chip);
         }
 
@@ -251,7 +309,7 @@ public class ProductListFragment extends Fragment
             if (brand == null) {
                 viewModel.clearBrandFilter();
             } else {
-                viewModel.filterByBrand(brand);
+                viewModel.toggleBrandSelection(brand);
             }
         });
 
@@ -271,7 +329,7 @@ public class ProductListFragment extends Fragment
     private void showBrandFilterDialog(List<Brand> brands) {
         BrandFilterBottomSheet bottomSheet = BrandFilterBottomSheet.newInstance(brands);
         bottomSheet.setOnBrandSelectedListener(brand -> {
-            viewModel.filterByBrand(brand);
+            viewModel.toggleBrandSelection(brand);
             Toast.makeText(getContext(), "Lọc theo: " + brand.getBrandName(), Toast.LENGTH_SHORT).show();
         });
         bottomSheet.show(getParentFragmentManager(), "BrandFilterBottomSheet");
@@ -288,14 +346,10 @@ public class ProductListFragment extends Fragment
      * Navigate to ProductDetailFragment with the selected product
      */
     private void navigateToProductDetail(Product product) {
-        if (getActivity() != null) {
-            getActivity().getSupportFragmentManager()
-                    .beginTransaction()
-                    .replace(R.id.nav_host_fragment_activity_main,
-                            com.example.shopverse_customer_app.ui.productdetail.ProductDetailFragment.newInstance(product))
-                    .addToBackStack(null)
-                    .commit();
-        }
+        Bundle bundle = new Bundle();
+        bundle.putSerializable("product", product);
+        NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_activity_main);
+        navController.navigate(R.id.action_productListFragment_to_productDetailFragment, bundle);
     }
 
     @Override

@@ -1,6 +1,7 @@
 package com.example.shopverse_customer_app.viewmodel;
 
 import android.app.Application;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
@@ -9,6 +10,7 @@ import androidx.lifecycle.MutableLiveData;
 
 import com.example.shopverse_customer_app.data.model.AuthResponse;
 import com.example.shopverse_customer_app.data.repository.AuthRepository;
+import com.example.shopverse_customer_app.utils.FirebaseTokenManager;
 
 /**
  * ViewModel for authentication operations
@@ -56,6 +58,7 @@ public class AuthViewModel extends AndroidViewModel {
                 isLoading.postValue(false);
                 authResponse.postValue(response);
                 loginSuccess.postValue(true);
+                FirebaseTokenManager.updateToken(getApplication(), response.getUser().getId());
             }
 
             @Override

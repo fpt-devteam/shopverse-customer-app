@@ -140,7 +140,7 @@ public class ErrorParser {
      * @param message Error message
      * @return ApiError object
      */
-    public static ApiError createApiError(int code, String message) {
+    public static ApiError createApiError(String code, String message) {
         ApiError apiError = new ApiError();
         apiError.setCode(code);
         apiError.setMsg(message);

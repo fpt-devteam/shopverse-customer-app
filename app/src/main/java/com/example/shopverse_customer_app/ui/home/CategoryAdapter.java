@@ -74,8 +74,9 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.Catego
         public void bind(Category category, OnCategoryClickListener listener) {
             categoryName.setText(category.getCategoryName());
 
-            // TODO: Set category icon based on category type
-            // For now using default icon
+            // Set category icon based on category name
+            int iconResId = getCategoryIcon(category.getCategoryName());
+            categoryIcon.setImageResource(iconResId);
 
             // Handle click
             itemView.setOnClickListener(v -> {
@@ -83,6 +84,36 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.Catego
                     listener.onCategoryClick(category);
                 }
             });
+        }
+
+        private int getCategoryIcon(String categoryName) {
+            if (categoryName == null) {
+                return R.drawable.ic_dashboard_black_24dp;
+            }
+
+            String lowerName = categoryName.toLowerCase().trim();
+
+            // Map category names to icons
+            if (lowerName.contains("iphone") || lowerName.contains("điện thoại") ||
+                lowerName.contains("phone") || lowerName.contains("smartphone")) {
+                return R.drawable.ic_iphone;
+            } else if (lowerName.contains("laptop") || lowerName.contains("máy tính xách tay")) {
+                return R.drawable.ic_laptop;
+            } else if (lowerName.contains("tivi") || lowerName.contains("tv") ||
+                       lowerName.contains("television")) {
+                return R.drawable.ic_tivi;
+            } else if (lowerName.contains("monitor") || lowerName.contains("màn hình")) {
+                return R.drawable.ic_monitor;
+            } else if (lowerName.contains("ac") || lowerName.contains("điều hòa") ||
+                       lowerName.contains("air conditioner") || lowerName.contains("máy lạnh")) {
+                return R.drawable.ic_ac;
+            } else if (lowerName.contains("airpod") || lowerName.contains("tai nghe") ||
+                       lowerName.contains("earphone") || lowerName.contains("headphone")) {
+                return R.drawable.ic_airpod;
+            } else {
+                // Default icon
+                return R.drawable.ic_dashboard_black_24dp;
+            }
         }
     }
 }

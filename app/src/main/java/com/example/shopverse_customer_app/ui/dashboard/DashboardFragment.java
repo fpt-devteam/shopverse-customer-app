@@ -1,6 +1,8 @@
 package com.example.shopverse_customer_app.ui.dashboard;
 
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -21,6 +23,9 @@ import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexWrap;
 import com.google.android.flexbox.FlexboxLayoutManager;
 
+import androidx.navigation.NavController;
+import androidx.navigation.Navigation;
+
 public class DashboardFragment extends Fragment
         implements CategorySidebarAdapter.OnCategoryClickListener,
         BrandAdapter.OnBrandClickListener {
@@ -32,7 +37,7 @@ public class DashboardFragment extends Fragment
     private BrandAdapter brandAdapter;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
-                             ViewGroup container, Bundle savedInstanceState) {
+            ViewGroup container, Bundle savedInstanceState) {
         dashboardViewModel = new ViewModelProvider(this).get(DashboardViewModel.class);
 
         binding = FragmentDashboardBinding.inflate(inflater, container, false);
@@ -90,8 +95,15 @@ public class DashboardFragment extends Fragment
             }
         });
 
-        // Observe brands
+        // Observe brands (for total count/debugging)
         dashboardViewModel.getBrands().observe(getViewLifecycleOwner(), brands -> {
+            if (brands != null) {
+                Log.d(TAG, "Total brands loaded: " + brands.size());
+            }
+        });
+
+        // Observe filtered brands (this is what we display)
+        dashboardViewModel.getFilteredBrands().observe(getViewLifecycleOwner(), brands -> {
             if (brands != null) {
                 brandAdapter.setBrands(brands);
 
@@ -99,12 +111,20 @@ public class DashboardFragment extends Fragment
                 if (brands.isEmpty()) {
                     binding.emptyStateTextView.setVisibility(View.VISIBLE);
                     binding.brandsRecyclerView.setVisibility(View.GONE);
+
+                    // Update empty message based on search state
+                    String query = dashboardViewModel.getSearchQuery().getValue();
+                    if (query != null && !query.isEmpty()) {
+                        binding.emptyStateTextView.setText("Không tìm thấy hãng \"" + query + "\"");
+                    } else {
+                        binding.emptyStateTextView.setText("Không có hãng nào");
+                    }
                 } else {
                     binding.emptyStateTextView.setVisibility(View.GONE);
                     binding.brandsRecyclerView.setVisibility(View.VISIBLE);
                 }
 
-                Log.d(TAG, "Brands updated: " + brands.size());
+                Log.d(TAG, "Filtered brands updated: " + brands.size());
             }
         });
 
@@ -125,10 +145,23 @@ public class DashboardFragment extends Fragment
     }
 
     private void setupSearchBar() {
-        // Set up search bar click listener
-        binding.searchBar.setOnClickListener(v -> {
-            // TODO: Implement search functionality
-            Toast.makeText(getContext(), "Tìm kiếm đang được phát triển", Toast.LENGTH_SHORT).show();
+        // Set up search TextWatcher for real-time filtering
+        binding.searchBar.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                // Not needed
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // Trigger search on each text change
+                dashboardViewModel.searchBrands(s.toString());
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                // Not needed
+            }
         });
 
         // Set up "See All" click listener
@@ -164,14 +197,10 @@ public class DashboardFragment extends Fragment
      * Navigate to ProductListFragment with the selected category
      */
     private void navigateToProductList(Category category) {
-        if (getActivity() != null) {
-            getActivity().getSupportFragmentManager()
-                    .beginTransaction()
-                    .replace(R.id.nav_host_fragment_activity_main,
-                            com.example.shopverse_customer_app.ui.productlist.ProductListFragment.newInstance(category))
-                    .addToBackStack(null)
-                    .commit();
-        }
+        Bundle bundle = new Bundle();
+        bundle.putSerializable("category", category);
+        NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_activity_main);
+        navController.navigate(R.id.action_navigation_dashboard_to_productListFragment, bundle);
     }
 
     @Override

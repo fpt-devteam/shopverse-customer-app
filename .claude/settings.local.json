@@ -6,7 +6,8 @@
       "Bash(./gradlew:*)",
       "Bash(dir \"C:\\Users\\NHATTHANG\\FptUniversity\\PRM392\\shopverse-customer-app\\app\\src\\main\\res\")",
       "Bash(findstr:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(nul)"
     ],
     "deny": [],
     "ask": []

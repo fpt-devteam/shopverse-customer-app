@@ -1,7 +1,10 @@
 package com.example.shopverse_customer_app.data.remote;
 
 import com.example.shopverse_customer_app.data.model.Brand;
+import com.example.shopverse_customer_app.data.model.CartItem;
 import com.example.shopverse_customer_app.data.model.Category;
+import com.example.shopverse_customer_app.data.model.Order;
+import com.example.shopverse_customer_app.data.model.OrderItem;
 import com.example.shopverse_customer_app.data.model.Product;
 import com.example.shopverse_customer_app.data.model.Profile;
 
@@ -9,7 +12,9 @@ import java.util.List;
 
 import retrofit2.Call;
 import retrofit2.http.Body;
+import retrofit2.http.DELETE;
 import retrofit2.http.GET;
+import retrofit2.http.Headers;
 import retrofit2.http.PATCH;
 import retrofit2.http.POST;
 import retrofit2.http.Query;
@@ -69,9 +74,10 @@ public interface SupabaseRestApi {
     );
 
     /**
-     * Get products by category with optional brand filter
+     * Get products by category with optional brand filter and search
      * GET /rest/v1/products?select=*,brands(*),categories(*)&category_id=eq.{id}&status=eq.active
-     * Optional: &brand_id=eq.{brandId}
+     * Optional: &brand_id=eq.{brandId} or &brand_id=in.(id1,id2,id3)
+     * Optional: &product_name=ilike.*search*
      */
     @GET("rest/v1/products")
     Call<List<Product>> getProducts(
@@ -79,8 +85,94 @@ public interface SupabaseRestApi {
             @Query("category_id") String categoryIdFilter,
             @Query("brand_id") String brandIdFilter,
             @Query("status") String statusFilter,
+            @Query("product_name") String productNameFilter,
             @Query("order") String order
     );
+
+    // ========== CART ITEMS ==========
+
+    /**
+     * Get cart items for a user (with product join)
+     * GET /rest/v1/cart_items?select=*,products(*)&user_id=eq.{id}
+     *
+     * @param select Fields to select with joins (e.g., "*,products(*)")
+     * @param userIdFilter User ID filter (e.g., "eq.123")
+     * @return List of cart items with product details
+     */
+    @GET("rest/v1/cart_items")
+    Call<List<CartItem>> getCartItems(
+            @Query("select") String select,
+            @Query("user_id") String userIdFilter
+    );
+
+    /**
+     * Add item to cart (or update if already exists due to UNIQUE constraint)
+     * POST /rest/v1/cart_items
+     *
+     * Note: If item already exists (same user_id + product_id), this will fail.
+     * Use PATCH with upsert header or check existence first.
+     *
+     * @param cartItem Cart item to add
+     * @return Created cart item (as array with single element)
+     */
+    @Headers("Prefer: return=representation")
+    @POST("rest/v1/cart_items")
+    Call<List<CartItem>> addToCart(@Body CartItem cartItem);
+
+    /**
+     * Update cart item quantity using composite primary key
+     * PATCH /rest/v1/cart_items?user_id=eq.{userId}&product_id=eq.{productId}
+     *
+     * @param userIdFilter User ID filter (e.g., "eq.123")
+     * @param productIdFilter Product ID filter (e.g., "eq.456")
+     * @param cartItem Updated cart item data (typically just quantity)
+     * @return List of updated cart items (should be single item)
+     */
+    @Headers("Prefer: return=representation")
+    @PATCH("rest/v1/cart_items")
+    Call<List<CartItem>> updateCartItem(
+            @Query("user_id") String userIdFilter,
+            @Query("product_id") String productIdFilter,
+            @Body CartItem cartItem
+    );
+
+    /**
+     * Delete cart item using composite primary key
+     * DELETE /rest/v1/cart_items?user_id=eq.{userId}&product_id=eq.{productId}
+     *
+     * @param userIdFilter User ID filter (e.g., "eq.123")
+     * @param productIdFilter Product ID filter (e.g., "eq.456")
+     * @return Void
+     */
+    @DELETE("rest/v1/cart_items")
+    Call<Void> deleteCartItem(
+            @Query("user_id") String userIdFilter,
+            @Query("product_id") String productIdFilter
+    );
+
+    // ========== ORDERS ==========
+
+    /**
+     * Create a new order
+     * POST /rest/v1/orders
+     *
+     * @param order Order object to create
+     * @return Created order with order_id
+     */
+    @Headers("Prefer: return=representation")
+    @POST("rest/v1/orders")
+    Call<List<Order>> createOrder(@Body Order order);
+
+    /**
+     * Create order items
+     * POST /rest/v1/order_items
+     *
+     * @param orderItems List of order items to insert
+     * @return Created order items
+     */
+    @Headers("Prefer: return=representation")
+    @POST("rest/v1/order_items")
+    Call<List<OrderItem>> createOrderItems(@Body List<OrderItem> orderItems);
 
     /**
      * Inner class to handle nested brand response from join query

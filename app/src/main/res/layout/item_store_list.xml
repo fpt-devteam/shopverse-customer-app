@@ -23,7 +23,7 @@
             android:layout_gravity="center_vertical"
             android:layout_marginEnd="12dp"
             android:src="@android:drawable/ic_dialog_map"
-            android:tint="@color/design_default_color_error"
+            app:tint="@color/design_default_color_error"
             android:contentDescription="Store icon" />
 
         <!-- Store Info -->
@@ -73,7 +73,7 @@
             android:layout_height="24dp"
             android:layout_gravity="center_vertical"
             android:src="@android:drawable/ic_menu_directions"
-            android:tint="@android:color/darker_gray"
+            app:tint="@android:color/darker_gray"
             android:contentDescription="Navigate" />
 
     </LinearLayout>

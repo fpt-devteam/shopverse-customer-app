@@ -21,29 +21,6 @@
             android:layout_margin="16dp"
             app:cardCornerRadius="8dp"
             app:cardElevation="2dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="12dp"
-                android:gravity="center_vertical">
-
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@android:drawable/ic_menu_search"
-                    android:contentDescription="Search" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/search_placeholder"
-                    android:textColor="#9E9E9E"
-                    android:textSize="16sp"
-                    android:layout_marginStart="8dp" />
-            </LinearLayout>
         </androidx.cardview.widget.CardView>
 
         <!-- Main Content Card -->
@@ -206,106 +183,6 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:layout_marginBottom="16dp">
-
-                    <!-- Membership Icon -->
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:gravity="center"
-                        android:padding="8dp">
-
-                        <ImageView
-                            android:layout_width="40dp"
-                            android:layout_height="40dp"
-                            android:src="@android:drawable/ic_menu_view"
-                            android:contentDescription="Membership" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/membership_benefits"
-                            android:textSize="12sp"
-                            android:textColor="@color/black"
-                            android:gravity="center"
-                            android:layout_marginTop="8dp" />
-                    </LinearLayout>
-
-                    <!-- Discount Icon -->
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:gravity="center"
-                        android:padding="8dp">
-
-                        <ImageView
-                            android:layout_width="40dp"
-                            android:layout_height="40dp"
-                            android:src="@android:drawable/ic_menu_gallery"
-                            android:contentDescription="Discount" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/discount"
-                            android:textSize="12sp"
-                            android:textColor="@color/black"
-                            android:gravity="center"
-                            android:layout_marginTop="8dp" />
-                    </LinearLayout>
-
-                    <!-- Purchase History Icon -->
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:gravity="center"
-                        android:padding="8dp">
-
-                        <ImageView
-                            android:layout_width="40dp"
-                            android:layout_height="40dp"
-                            android:src="@android:drawable/ic_menu_agenda"
-                            android:contentDescription="Purchase History" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/purchase_history"
-                            android:textSize="12sp"
-                            android:textColor="@color/black"
-                            android:gravity="center"
-                            android:layout_marginTop="8dp" />
-                    </LinearLayout>
-
-                    <!-- S-Student Icon -->
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:gravity="center"
-                        android:padding="8dp">
-
-                        <ImageView
-                            android:layout_width="40dp"
-                            android:layout_height="40dp"
-                            android:src="@android:drawable/ic_menu_info_details"
-                            android:contentDescription="S-Student" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/s_student"
-                            android:textSize="12sp"
-                            android:textColor="@color/black"
-                            android:gravity="center"
-                            android:layout_marginTop="8dp" />
-                    </LinearLayout>
                 </LinearLayout>
 
                 <!-- History Section -->
@@ -362,42 +239,6 @@
                     android:textColor="#757575"
                     android:layout_marginTop="16dp"
                     android:layout_marginBottom="8dp" />
-
-
-                <!-- S-Edu Menu Item -->
-                <LinearLayout
-                    android:id="@+id/menuSEdu"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="12dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:background="?attr/selectableItemBackground">
-
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@android:drawable/ic_menu_info_details"
-                        android:contentDescription="S-Edu" />
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/s_edu"
-                        android:textSize="16sp"
-                        android:textColor="@color/black"
-                        android:layout_marginStart="12dp"
-                        android:layout_gravity="center_vertical" />
-
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@android:drawable/ic_menu_more"
-                        android:rotation="270"
-                        android:contentDescription="Navigate" />
-                </LinearLayout>
 
                 <!-- Discount Menu Item -->
                 <LinearLayout

@@ -9,7 +9,7 @@ import com.google.gson.annotations.SerializedName;
 public class ApiError {
 
     @SerializedName("code")
-    private Integer code;
+    private String code; // Changed to String to support codes like "PGRST204"
 
     @SerializedName("error")
     private String error;
@@ -23,17 +23,17 @@ public class ApiError {
     public ApiError() {
     }
 
-    public ApiError(Integer code, String error, String msg) {
+    public ApiError(String code, String error, String msg) {
         this.code = code;
         this.error = error;
         this.msg = msg;
     }
 
-    public Integer getCode() {
+    public String getCode() {
         return code;
     }
 
-    public void setCode(Integer code) {
+    public void setCode(String code) {
         this.code = code;
     }
 

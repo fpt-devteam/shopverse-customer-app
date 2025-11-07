@@ -24,10 +24,15 @@ public class DashboardViewModel extends ViewModel {
 
     private final MutableLiveData<List<Category>> categories = new MutableLiveData<>();
     private final MutableLiveData<List<Brand>> brands = new MutableLiveData<>();
+    private final MutableLiveData<List<Brand>> filteredBrands = new MutableLiveData<>();
     private final MutableLiveData<Category> selectedCategory = new MutableLiveData<>();
     private final MutableLiveData<Boolean> loading = new MutableLiveData<>(false);
     private final MutableLiveData<String> error = new MutableLiveData<>();
+    private final MutableLiveData<String> searchQuery = new MutableLiveData<>("");
     private final SupabaseRestApi restApi;
+
+    // Keep reference to all brands for filtering
+    private List<Brand> allBrands = new ArrayList<>();
 
     public DashboardViewModel() {
         restApi = RetrofitClient.getInstance().getRestApi();
@@ -42,6 +47,10 @@ public class DashboardViewModel extends ViewModel {
         return brands;
     }
 
+    public LiveData<List<Brand>> getFilteredBrands() {
+        return filteredBrands;
+    }
+
     public LiveData<Category> getSelectedCategory() {
         return selectedCategory;
     }
@@ -54,6 +63,10 @@ public class DashboardViewModel extends ViewModel {
         return error;
     }
 
+    public LiveData<String> getSearchQuery() {
+        return searchQuery;
+    }
+
     /**
      * Fetch categories from Supabase
      */
@@ -61,7 +74,7 @@ public class DashboardViewModel extends ViewModel {
         loading.setValue(true);
         error.setValue(null);
 
-        restApi.getCategories("*").enqueue(new Callback<List<Category>>() {
+        restApi.getCategories("category_id,category_name").enqueue(new Callback<List<Category>>() {
             @Override
             public void onResponse(Call<List<Category>> call, Response<List<Category>> response) {
                 loading.setValue(false);
@@ -95,7 +108,8 @@ public class DashboardViewModel extends ViewModel {
      * Select a category and fetch its brands
      */
     public void selectCategory(Category category) {
-        if (category == null) return;
+        if (category == null)
+            return;
 
         selectedCategory.setValue(category);
         loadBrandsForCategory(category.getCategoryId());
@@ -113,37 +127,81 @@ public class DashboardViewModel extends ViewModel {
 
         restApi.getBrandsByCategory("brands(*)", filter)
                 .enqueue(new Callback<List<SupabaseRestApi.BrandResponse>>() {
-            @Override
-            public void onResponse(Call<List<SupabaseRestApi.BrandResponse>> call,
-                                   Response<List<SupabaseRestApi.BrandResponse>> response) {
-                loading.setValue(false);
-                if (response.isSuccessful() && response.body() != null) {
-                    // Extract brands from nested response
-                    List<Brand> brandList = new ArrayList<>();
-                    for (SupabaseRestApi.BrandResponse brandResponse : response.body()) {
-                        if (brandResponse.brand != null) {
-                            brandList.add(brandResponse.brand);
+                    @Override
+                    public void onResponse(Call<List<SupabaseRestApi.BrandResponse>> call,
+                            Response<List<SupabaseRestApi.BrandResponse>> response) {
+                        loading.setValue(false);
+                        if (response.isSuccessful() && response.body() != null) {
+                            // Extract brands from nested response
+                            List<Brand> brandList = new ArrayList<>();
+                            for (SupabaseRestApi.BrandResponse brandResponse : response.body()) {
+                                if (brandResponse.brand != null) {
+                                    brandList.add(brandResponse.brand);
+                                }
+                            }
+                            allBrands = brandList;
+                            brands.setValue(brandList);
+                            // Apply current search filter
+                            filterBrands(searchQuery.getValue());
+                            Log.d(TAG, "Brands loaded for category " + categoryId + ": " + brandList.size());
+                        } else {
+                            String errorMsg = "Failed to load brands: " + response.code();
+                            error.setValue(errorMsg);
+                            Log.e(TAG, errorMsg);
+                            brands.setValue(new ArrayList<>()); // Empty list on error
                         }
                     }
-                    brands.setValue(brandList);
-                    Log.d(TAG, "Brands loaded for category " + categoryId + ": " + brandList.size());
-                } else {
-                    String errorMsg = "Failed to load brands: " + response.code();
-                    error.setValue(errorMsg);
-                    Log.e(TAG, errorMsg);
-                    brands.setValue(new ArrayList<>()); // Empty list on error
-                }
-            }
 
-            @Override
-            public void onFailure(Call<List<SupabaseRestApi.BrandResponse>> call, Throwable t) {
-                loading.setValue(false);
-                String errorMsg = "Network error: " + t.getMessage();
-                error.setValue(errorMsg);
-                Log.e(TAG, errorMsg, t);
-                brands.setValue(new ArrayList<>()); // Empty list on error
+                    @Override
+                    public void onFailure(Call<List<SupabaseRestApi.BrandResponse>> call, Throwable t) {
+                        loading.setValue(false);
+                        String errorMsg = "Network error: " + t.getMessage();
+                        error.setValue(errorMsg);
+                        Log.e(TAG, errorMsg, t);
+                        brands.setValue(new ArrayList<>()); // Empty list on error
+                    }
+                });
+    }
+
+    /**
+     * Search brands by query
+     * Filters brands by name (case-insensitive)
+     */
+    public void searchBrands(String query) {
+        searchQuery.setValue(query);
+        filterBrands(query);
+    }
+
+    /**
+     * Filter brands based on search query
+     */
+    private void filterBrands(String query) {
+        if (query == null || query.trim().isEmpty()) {
+            // No filter, show all brands
+            filteredBrands.setValue(allBrands);
+            return;
+        }
+
+        String lowerQuery = query.toLowerCase().trim();
+        List<Brand> filtered = new ArrayList<>();
+
+        for (Brand brand : allBrands) {
+            if (brand.getBrandName() != null &&
+                    brand.getBrandName().toLowerCase().contains(lowerQuery)) {
+                filtered.add(brand);
             }
-        });
+        }
+
+        filteredBrands.setValue(filtered);
+        Log.d(TAG, "Filtered brands: " + filtered.size() + " out of " + allBrands.size());
+    }
+
+    /**
+     * Clear search query
+     */
+    public void clearSearch() {
+        searchQuery.setValue("");
+        filteredBrands.setValue(allBrands);
     }
 
     /**

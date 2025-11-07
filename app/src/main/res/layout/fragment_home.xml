@@ -58,18 +58,20 @@
                         android:src="@drawable/ic_search"
                         android:contentDescription="@string/search_placeholder"/>
 
-                    <TextView
+                    <EditText
                         android:id="@+id/searchBar"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:layout_marginStart="8dp"
-                        android:text="@string/search_placeholder"
+                        android:hint="@string/search_placeholder"
                         android:textSize="14sp"
-                        android:textColor="#757575"
+                        android:textColor="#212121"
+                        android:textColorHint="#757575"
                         android:background="@android:color/transparent"
-                        android:clickable="true"
-                        android:focusable="true"/>
+                        android:inputType="text"
+                        android:imeOptions="actionSearch"
+                        android:maxLines="1"/>
 
                 </LinearLayout>
 
@@ -79,18 +81,97 @@
 
     </LinearLayout>
 
-    <!-- Categories Grid -->
+    <!-- Price Filter Chips -->
+    <HorizontalScrollView
+        android:id="@+id/priceFilterScrollView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scrollbars="none"
+        app:layout_constraintTop_toBottomOf="@id/headerLayout"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/priceFilterChipGroup"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="12dp"
+            app:singleSelection="true"
+            app:selectionRequired="false">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipAllPrices"
+                style="@style/Widget.MaterialComponents.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Tất cả"
+                android:checked="true"/>
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipUnder5M"
+                style="@style/Widget.MaterialComponents.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Dưới 5 triệu"/>
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipFrom5To10M"
+                style="@style/Widget.MaterialComponents.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="5 - 10 triệu"/>
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipFrom10To20M"
+                style="@style/Widget.MaterialComponents.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="10 - 20 triệu"/>
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipFrom20To30M"
+                style="@style/Widget.MaterialComponents.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="20 - 30 triệu"/>
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipAbove30M"
+                style="@style/Widget.MaterialComponents.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Trên 30 triệu"/>
+
+        </com.google.android.material.chip.ChipGroup>
+
+    </HorizontalScrollView>
+
+    <!-- Products Grid (replacing categories) -->
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/categoriesRecyclerView"
+        android:id="@+id/productsRecyclerView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:padding="8dp"
         android:clipToPadding="false"
-        app:layout_constraintTop_toBottomOf="@id/headerLayout"
+        app:layout_constraintTop_toBottomOf="@id/priceFilterScrollView"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        tools:listitem="@layout/item_category"/>
+        tools:listitem="@layout/item_product"/>
+
+    <!-- Empty State -->
+    <TextView
+        android:id="@+id/emptyStateTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Không tìm thấy sản phẩm"
+        android:textSize="16sp"
+        android:textColor="#757575"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/priceFilterScrollView"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
 
     <!-- Loading Indicator -->
     <ProgressBar
@@ -98,7 +179,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/headerLayout"
+        app:layout_constraintTop_toBottomOf="@id/priceFilterScrollView"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>

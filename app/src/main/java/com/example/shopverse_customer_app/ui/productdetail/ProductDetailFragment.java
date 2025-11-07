@@ -21,6 +21,8 @@ import androidx.viewpager2.widget.ViewPager2;
 
 import com.example.shopverse_customer_app.R;
 import com.example.shopverse_customer_app.data.model.Product;
+import com.example.shopverse_customer_app.ui.cart.CartViewModel;
+import com.example.shopverse_customer_app.utils.TokenManager;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -34,6 +36,8 @@ public class ProductDetailFragment extends Fragment {
     private static final String ARG_PRODUCT = "product";
 
     private ProductDetailViewModel viewModel;
+    private CartViewModel cartViewModel;
+    private TokenManager tokenManager;
     private Product product;
 
     // Views
@@ -77,6 +81,8 @@ public class ProductDetailFragment extends Fragment {
 
         // Initialize ViewModel
         viewModel = new ViewModelProvider(this).get(ProductDetailViewModel.class);
+        cartViewModel = new ViewModelProvider(this).get(CartViewModel.class);
+        tokenManager = new TokenManager(requireContext());
 
         // Initialize views
         initializeViews(view);
@@ -142,14 +148,50 @@ public class ProductDetailFragment extends Fragment {
         });
 
         view.findViewById(R.id.addToCartButton).setOnClickListener(v -> {
-            // TODO: Add to cart
-            Toast.makeText(getContext(), "Đã thêm vào giỏ hàng", Toast.LENGTH_SHORT).show();
+            addToCart();
         });
 
         view.findViewById(R.id.buyNowButton).setOnClickListener(v -> {
             // TODO: Proceed to checkout
             Toast.makeText(getContext(), "Mua ngay", Toast.LENGTH_SHORT).show();
         });
+    }
+
+    /**
+     * Add product to cart
+     */
+    private void addToCart() {
+        if (product == null) {
+            Toast.makeText(getContext(), "Không tìm thấy sản phẩm", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Check if user is logged in
+        String userIdStr = tokenManager.getUserId();
+        if (userIdStr == null || userIdStr.isEmpty()) {
+            Toast.makeText(getContext(), "Vui lòng đăng nhập để thêm vào giỏ hàng", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        // Check if product is available
+        if (!product.isActive() || !product.isInStock()) {
+            Toast.makeText(getContext(), "Sản phẩm hiện không có sẵn", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // User ID is UUID string, no need to parse
+        String userId = userIdStr;
+        String productId = product.getProductId();
+        String accessToken = tokenManager.getAccessToken();
+
+        Log.e("ERROR: RLS", "userId from storage: " + userId);
+        Log.e("ERROR: RLS", "accessToken: " + (accessToken != null ? accessToken.substring(0, Math.min(50, accessToken.length())) + "..." : "null"));
+
+        int quantity = 1; // Default quantity
+
+        // Add to cart via ViewModel
+        cartViewModel.addOrUpdateCartItem(userId, productId, quantity);
+        Log.d(TAG, "Requesting to add product to cart: " + product.getProductName());
     }
 
     private void displayProductData() {
@@ -213,6 +255,34 @@ public class ProductDetailFragment extends Fragment {
                 favoriteButton.setText("♥ Đã thích");
             } else {
                 favoriteButton.setText("♡ Yêu thích");
+            }
+        });
+
+        // Observe cart operations
+        cartViewModel.getLoading().observe(getViewLifecycleOwner(), isLoading -> {
+            if (isLoading != null && isLoading) {
+                // Show loading indicator if needed
+                if (loadingProgressBar != null) {
+                    loadingProgressBar.setVisibility(View.VISIBLE);
+                }
+            } else {
+                if (loadingProgressBar != null) {
+                    loadingProgressBar.setVisibility(View.GONE);
+                }
+            }
+        });
+
+        cartViewModel.getSuccess().observe(getViewLifecycleOwner(), successMsg -> {
+            if (successMsg != null && !successMsg.isEmpty()) {
+                Toast.makeText(getContext(), successMsg, Toast.LENGTH_SHORT).show();
+                Log.d(TAG, "Cart success: " + successMsg);
+            }
+        });
+
+        cartViewModel.getError().observe(getViewLifecycleOwner(), error -> {
+            if (error != null && !error.isEmpty()) {
+                Toast.makeText(getContext(), "Lỗi: " + error, Toast.LENGTH_LONG).show();
+                Log.e(TAG, "Cart error: " + error);
             }
         });
     }
