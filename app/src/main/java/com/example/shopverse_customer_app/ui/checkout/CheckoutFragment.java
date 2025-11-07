@@ -1,7 +1,10 @@
 package com.example.shopverse_customer_app.ui.checkout;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.InputType;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -164,10 +167,25 @@ public class CheckoutFragment extends Fragment {
             }
         });
 
-        // Observe order success
-        viewModel.getOrderSuccess().observe(getViewLifecycleOwner(), success -> {
-            if (success != null && success) {
-                showOrderSuccessDialog();
+        // Observe payment URL and open in browser
+        viewModel.getPaymentUrl().observe(getViewLifecycleOwner(), paymentUrl -> {
+            if (paymentUrl != null && !paymentUrl.isEmpty()) {
+                Log.d(TAG, "Opening payment URL: " + paymentUrl);
+                openPaymentUrlInBrowser(paymentUrl);
+
+                // Navigate back to cart first, then switch to Account tab
+                Navigation.findNavController(requireView()).navigateUp();
+
+                // Post a delayed action to switch to Account tab via MainActivity
+                new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                    if (getActivity() != null) {
+                        com.google.android.material.bottomnavigation.BottomNavigationView bottomNav =
+                            getActivity().findViewById(R.id.nav_view);
+                        if (bottomNav != null) {
+                            bottomNav.setSelectedItemId(R.id.navigation_account);
+                        }
+                    }
+                }, 100);
             }
         });
     }
@@ -214,16 +232,27 @@ public class CheckoutFragment extends Fragment {
         builder.create().show();
     }
 
-    private void showOrderSuccessDialog() {
-        new AlertDialog.Builder(requireContext())
-                .setTitle("Đặt hàng thành công!")
-                .setMessage("Đơn hàng của bạn đã được đặt thành công. Cảm ơn bạn đã mua hàng!")
-                .setPositiveButton("OK", (dialog, which) -> {
-                    // Navigate back to home or orders page
-                    Navigation.findNavController(requireView()).navigateUp();
-                })
-                .setCancelable(false)
-                .show();
+    /**
+     * Open payment URL in external browser
+     */
+    private void openPaymentUrlInBrowser(String paymentUrl) {
+        try {
+            Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(paymentUrl));
+            startActivity(browserIntent);
+
+            Toast.makeText(getContext(),
+                "Đang mở trang thanh toán...",
+                Toast.LENGTH_SHORT).show();
+
+            // Optionally navigate back or stay on checkout page
+            // Navigation.findNavController(requireView()).navigateUp();
+
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to open payment URL", e);
+            Toast.makeText(getContext(),
+                "Không thể mở trang thanh toán: " + e.getMessage(),
+                Toast.LENGTH_LONG).show();
+        }
     }
 
     private String formatPrice(double price) {

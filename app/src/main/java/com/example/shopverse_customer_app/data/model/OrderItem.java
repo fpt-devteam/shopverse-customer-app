@@ -10,13 +10,13 @@ import java.io.Serializable;
 public class OrderItem implements Serializable {
 
     @SerializedName("order_id")
-    private Long orderId;
+    private String orderId; // UUID from orders table
 
     @SerializedName("product_id")
-    private String productId;
+    private String productId; // UUID from products table
 
     @SerializedName("discount_id")
-    private Long discountId;
+    private String discountId; // UUID from discounts table (nullable)
 
     @SerializedName("quantity")
     private int quantity;
@@ -27,7 +27,7 @@ public class OrderItem implements Serializable {
     public OrderItem() {
     }
 
-    public OrderItem(Long orderId, String productId, int quantity, double unitPrice) {
+    public OrderItem(String orderId, String productId, int quantity, double unitPrice) {
         this.orderId = orderId;
         this.productId = productId;
         this.quantity = quantity;
@@ -35,11 +35,11 @@ public class OrderItem implements Serializable {
     }
 
     // Getters and Setters
-    public Long getOrderId() {
+    public String getOrderId() {
         return orderId;
     }
 
-    public void setOrderId(Long orderId) {
+    public void setOrderId(String orderId) {
         this.orderId = orderId;
     }
 
@@ -51,11 +51,11 @@ public class OrderItem implements Serializable {
         this.productId = productId;
     }
 
-    public Long getDiscountId() {
+    public String getDiscountId() {
         return discountId;
     }
 
-    public void setDiscountId(Long discountId) {
+    public void setDiscountId(String discountId) {
         this.discountId = discountId;
     }
 

@@ -1,8 +1,12 @@
 package com.example.shopverse_customer_app;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Toast;
 
 import android.view.View;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -20,6 +24,7 @@ import com.google.firebase.FirebaseApp;
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final String TAG = "MainActivity";
     private ActivityMainBinding binding;
     private NavController navController;
 
@@ -47,7 +52,9 @@ public class MainActivity extends AppCompatActivity {
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
 
         navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
-            if (destination.getId() == R.id.navigation_checkout || destination.getId() == R.id.productDetailFragment) {
+            if (destination.getId() == R.id.navigation_checkout ||
+                destination.getId() == R.id.productDetailFragment ||
+                destination.getId() == R.id.orderHistoryFragment) {
                 binding.navView.setVisibility(View.GONE);
             } else {
                 binding.navView.setVisibility(View.VISIBLE);
@@ -55,6 +62,85 @@ public class MainActivity extends AppCompatActivity {
         });
 
         NavigationUI.setupWithNavController(binding.navView, navController);
+
+        // Handle deep link from payment callback
+        handleDeepLink(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleDeepLink(intent);
+    }
+
+    /**
+     * Handle deep link for payment callback
+     * URI format: shopverse://payment?status=success&orderCode=xxx&orderId=xxx
+     */
+    private void handleDeepLink(Intent intent) {
+        Uri data = intent.getData();
+        if (data != null) {
+            String scheme = data.getScheme();
+            String host = data.getHost();
+
+            Log.d(TAG, "Deep link received - Scheme: " + scheme + ", Host: " + host);
+            Log.d(TAG, "Full URI: " + data.toString());
+
+            if ("shopverse".equals(scheme) && "payment".equals(host)) {
+                // Extract query parameters
+                String status = data.getQueryParameter("status");
+                String orderCode = data.getQueryParameter("orderCode");
+                String orderId = data.getQueryParameter("orderId");
+
+                Log.d(TAG, "Payment callback - Status: " + status + ", OrderCode: " + orderCode + ", OrderId: " + orderId);
+
+                // Handle payment result
+                if ("success".equalsIgnoreCase(status)) {
+                    handlePaymentSuccess(orderId, orderCode);
+                } else if ("cancel".equalsIgnoreCase(status)) {
+                    handlePaymentCancel(orderId, orderCode);
+                } else {
+                    handlePaymentFailure(orderId, orderCode);
+                }
+            }
+        }
+    }
+
+    /**
+     * Handle successful payment
+     */
+    private void handlePaymentSuccess(String orderId, String orderCode) {
+        Log.d(TAG, "Payment successful - OrderId: " + orderId + ", OrderCode: " + orderCode);
+
+        Toast.makeText(this, "Thanh toán thành công!\nMã đơn hàng: " + orderCode, Toast.LENGTH_LONG).show();
+
+        // Navigate to Account tab to show orders
+        binding.navView.setSelectedItemId(R.id.navigation_account);
+    }
+
+    /**
+     * Handle cancelled payment
+     */
+    private void handlePaymentCancel(String orderId, String orderCode) {
+        Log.d(TAG, "Payment cancelled - OrderId: " + orderId + ", OrderCode: " + orderCode);
+
+        Toast.makeText(this, "Đã hủy thanh toán", Toast.LENGTH_SHORT).show();
+
+        // Navigate to Account tab
+        binding.navView.setSelectedItemId(R.id.navigation_account);
+    }
+
+    /**
+     * Handle failed payment
+     */
+    private void handlePaymentFailure(String orderId, String orderCode) {
+        Log.e(TAG, "Payment failed - OrderId: " + orderId + ", OrderCode: " + orderCode);
+
+        Toast.makeText(this, "Thanh toán thất bại. Vui lòng thử lại.", Toast.LENGTH_LONG).show();
+
+        // Navigate to Account tab
+        binding.navView.setSelectedItemId(R.id.navigation_account);
     }
 
     // Removed toolbar menu - cart is now in bottom navigation

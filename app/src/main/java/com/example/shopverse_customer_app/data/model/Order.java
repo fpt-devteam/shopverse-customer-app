@@ -10,10 +10,10 @@ import java.io.Serializable;
 public class Order implements Serializable {
 
     @SerializedName("order_id")
-    private Long orderId;
+    private String orderId; // UUID from database
 
     @SerializedName("user_id")
-    private String userId;
+    private String userId; // UUID from auth.users
 
     @SerializedName("total_discount")
     private double totalDiscount;
@@ -42,11 +42,11 @@ public class Order implements Serializable {
     }
 
     // Getters and Setters
-    public Long getOrderId() {
+    public String getOrderId() {
         return orderId;
     }
 
-    public void setOrderId(Long orderId) {
+    public void setOrderId(String orderId) {
         this.orderId = orderId;
     }
 

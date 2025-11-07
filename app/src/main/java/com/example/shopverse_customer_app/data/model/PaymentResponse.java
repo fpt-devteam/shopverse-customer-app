@@ -4,10 +4,11 @@ import com.google.gson.annotations.SerializedName;
 
 /**
  * Payment response from Edge Function
+ * Note: Edge Function returns "paymentUrl" (camelCase)
  */
 public class PaymentResponse {
 
-    @SerializedName("payment_url")
+    @SerializedName("paymentUrl")
     private String paymentUrl;
 
     public PaymentResponse() {

@@ -43,6 +43,7 @@ public class HomeFragment extends Fragment implements ProductAdapter.OnProductCl
         observeViewModel();
         setupSearchBar();
         setupPriceFilter();
+        setupSortButton();
 
         return root;
     }
@@ -184,6 +185,69 @@ public class HomeFragment extends Fragment implements ProductAdapter.OnProductCl
         // TODO: Implement favorite functionality
         Toast.makeText(getContext(), "Added to favorites: " + product.getProductName(), Toast.LENGTH_SHORT).show();
         Log.d(TAG, "Favorite clicked: " + product.getProductName());
+    }
+
+    private void setupSortButton() {
+        // Popular filter (default)
+        binding.filterPopular.setOnClickListener(v -> {
+            homeViewModel.setSortOrder(null); // No sorting, popular/default order
+            updateFilterTabStyles(binding.filterPopular);
+            Log.d(TAG, "Popular filter clicked");
+        });
+
+        // Promotion filter (could be implemented later)
+        binding.filterPromotion.setOnClickListener(v -> {
+            Toast.makeText(getContext(), "Chức năng khuyến mãi đang phát triển", Toast.LENGTH_SHORT).show();
+            Log.d(TAG, "Promotion filter clicked");
+        });
+
+        // Price filter - toggle between asc and desc
+        binding.filterPrice.setOnClickListener(v -> {
+            String currentSort = homeViewModel.getSortOrder().getValue();
+
+            if (currentSort == null || currentSort.equals("desc")) {
+                // Change to ascending
+                homeViewModel.setSortOrder("asc");
+                binding.filterPrice.setText("Giá ▲");
+            } else {
+                // Change to descending
+                homeViewModel.setSortOrder("desc");
+                binding.filterPrice.setText("Giá ▼");
+            }
+
+            updateFilterTabStyles(binding.filterPrice);
+            Log.d(TAG, "Price filter clicked - new order: " + homeViewModel.getSortOrder().getValue());
+        });
+
+        // Observe sort order changes
+        homeViewModel.getSortOrder().observe(getViewLifecycleOwner(), sortOrder -> {
+            if (sortOrder != null) {
+                if (sortOrder.equals("asc")) {
+                    binding.filterPrice.setText("Giá ▲");
+                } else if (sortOrder.equals("desc")) {
+                    binding.filterPrice.setText("Giá ▼");
+                }
+            } else {
+                binding.filterPrice.setText("Giá ▼");
+            }
+        });
+    }
+
+    /**
+     * Update filter tab styles (highlight selected tab)
+     */
+    private void updateFilterTabStyles(android.widget.TextView selectedTab) {
+        // Reset all tabs to default style
+        binding.filterPopular.setTextColor(getResources().getColor(android.R.color.black, null));
+        binding.filterPopular.setTypeface(null, android.graphics.Typeface.NORMAL);
+        binding.filterPromotion.setTextColor(getResources().getColor(android.R.color.black, null));
+        binding.filterPromotion.setTypeface(null, android.graphics.Typeface.NORMAL);
+        binding.filterPrice.setTextColor(getResources().getColor(android.R.color.black, null));
+        binding.filterPrice.setTypeface(null, android.graphics.Typeface.NORMAL);
+
+        // Highlight selected tab
+        selectedTab.setTextColor(getResources().getColor(R.color.red_500, null));
+        selectedTab.setTypeface(null, android.graphics.Typeface.BOLD);
     }
 
     @Override

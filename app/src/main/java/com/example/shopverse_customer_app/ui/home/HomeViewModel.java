@@ -12,6 +12,8 @@ import com.example.shopverse_customer_app.data.remote.RetrofitClient;
 import com.example.shopverse_customer_app.data.remote.SupabaseRestApi;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import retrofit2.Call;
@@ -29,6 +31,7 @@ public class HomeViewModel extends ViewModel {
     private final MutableLiveData<String> error = new MutableLiveData<>();
     private final MutableLiveData<String> searchQuery = new MutableLiveData<>("");
     private final MutableLiveData<String> priceRange = new MutableLiveData<>("all");
+    private final MutableLiveData<String> sortOrder = new MutableLiveData<>("asc"); // "asc" or "desc"
     private final SupabaseRestApi restApi;
 
     // Keep reference to all products for filtering
@@ -66,6 +69,31 @@ public class HomeViewModel extends ViewModel {
 
     public LiveData<String> getPriceRange() {
         return priceRange;
+    }
+
+    public LiveData<String> getSortOrder() {
+        return sortOrder;
+    }
+
+    /**
+     * Toggle sort order between ascending and descending
+     * Calls API immediately to reload products with new sort
+     */
+    public void toggleSortOrder() {
+        String currentSort = sortOrder.getValue();
+        sortOrder.setValue(currentSort != null && currentSort.equals("asc") ? "desc" : "asc");
+        Log.d(TAG, "Sort order toggled to: " + sortOrder.getValue() + " - Reloading from API");
+        loadProducts(); // Reload products from API with new sort order
+    }
+
+    /**
+     * Set sort order and reload from API
+     * @param order "asc", "desc", or null for default
+     */
+    public void setSortOrder(String order) {
+        sortOrder.setValue(order);
+        Log.d(TAG, "Sort order set to: " + order + " - Reloading from API");
+        loadProducts();
     }
 
     /**
@@ -107,15 +135,30 @@ public class HomeViewModel extends ViewModel {
     }
 
     /**
-     * Load all products
+     * Load all products with API sorting
      */
     public void loadProducts() {
         loading.setValue(true);
         error.setValue(null);
 
+        // Build order parameter based on current sort order
+        final String orderParam;
+        String currentSort = sortOrder.getValue();
+        if (currentSort != null) {
+            if (currentSort.equals("asc")) {
+                orderParam = "unit_price.asc";
+            } else if (currentSort.equals("desc")) {
+                orderParam = "unit_price.desc";
+            } else {
+                orderParam = null;
+            }
+        } else {
+            orderParam = null;
+        }
+
         // Load all products with brand and category info
         // Parameters: select, categoryId, brandId, status, productName, order
-        restApi.getProducts("*,brands(*),categories(*)", null, null, "eq.active", null, null)
+        restApi.getProducts("*,brands(*),categories(*)", null, null, "eq.active", null, orderParam)
                 .enqueue(new Callback<List<Product>>() {
                     @Override
                     public void onResponse(Call<List<Product>> call, Response<List<Product>> response) {
@@ -123,9 +166,9 @@ public class HomeViewModel extends ViewModel {
                         if (response.isSuccessful() && response.body() != null) {
                             allProducts = response.body();
                             products.setValue(allProducts);
-                            // Apply current search filter
+                            // Apply current search and price filter (no sorting needed - done by API)
                             applyFilters();
-                            Log.d(TAG, "Products loaded: " + allProducts.size());
+                            Log.d(TAG, "Products loaded: " + allProducts.size() + " (sorted by API: " + orderParam + ")");
                         } else {
                             String errorMsg = "Failed to load products: " + response.code();
                             error.setValue(errorMsg);
@@ -216,6 +259,7 @@ public class HomeViewModel extends ViewModel {
             }
         }
 
+        // No need for client-side sorting - API handles sorting
         filteredProducts.setValue(filtered);
         Log.d(TAG, "Filtered products: " + filtered.size() + " out of " + allProducts.size() +
                 " (query: " + query + ", price: " + range + ")");

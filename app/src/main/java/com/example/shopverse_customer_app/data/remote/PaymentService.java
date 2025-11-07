@@ -23,20 +23,21 @@ public interface PaymentService {
 
     /**
      * Payment request body
+     * Note: Edge Function expects "orderId" (camelCase), not "order_id" (snake_case)
      */
     class PaymentRequest {
-        private Long order_id;
+        private String orderId; // UUID from orders table
 
-        public PaymentRequest(Long orderId) {
-            this.order_id = orderId;
+        public PaymentRequest(String orderId) {
+            this.orderId = orderId;
         }
 
-        public Long getOrder_id() {
-            return order_id;
+        public String getOrderId() {
+            return orderId;
         }
 
-        public void setOrder_id(Long order_id) {
-            this.order_id = order_id;
+        public void setOrderId(String orderId) {
+            this.orderId = orderId;
         }
     }
 }

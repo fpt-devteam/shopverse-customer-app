@@ -45,7 +45,17 @@
         android:id="@+id/navigation_account"
         android:name="com.example.shopverse_customer_app.ui.account.AccountFragment"
         android:label="@string/title_account"
-        tools:layout="@layout/fragment_account" />
+        tools:layout="@layout/fragment_account">
+        <action
+            android:id="@+id/action_navigation_account_to_orderHistoryFragment"
+            app:destination="@id/orderHistoryFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/orderHistoryFragment"
+        android:name="com.example.shopverse_customer_app.ui.orderhistory.OrderHistoryFragment"
+        android:label="Lịch sử đơn hàng"
+        tools:layout="@layout/fragment_order_history" />
 
     <fragment
         android:id="@+id/navigation_checkout"

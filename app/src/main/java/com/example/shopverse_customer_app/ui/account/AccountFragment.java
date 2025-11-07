@@ -12,13 +12,26 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
 
 import com.example.shopverse_customer_app.R;
+import com.example.shopverse_customer_app.data.model.Order;
+import com.example.shopverse_customer_app.data.remote.RetrofitClient;
+import com.example.shopverse_customer_app.data.remote.SupabaseRestApi;
 import com.example.shopverse_customer_app.ui.auth.LoginActivity;
 import com.example.shopverse_customer_app.ui.auth.RegisterActivity;
 import com.example.shopverse_customer_app.utils.TokenManager;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 /**
  * AccountFragment displays user profile and account settings
@@ -37,6 +50,7 @@ public class AccountFragment extends Fragment {
     private Button btnRegister;
     private Button btnLogout;
     private TextView tvUserEmail;
+    private LinearLayout menuPurchaseHistory;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -71,6 +85,7 @@ public class AccountFragment extends Fragment {
         btnRegister = root.findViewById(R.id.btnRegister);
         btnLogout = root.findViewById(R.id.btnLogout);
         tvUserEmail = root.findViewById(R.id.tvUserEmail);
+        menuPurchaseHistory = root.findViewById(R.id.menuPurchaseHistory);
 
         Log.d(TAG, "initializeViews: layoutNotLoggedIn = " + (layoutNotLoggedIn != null ? "found" : "NULL"));
         Log.d(TAG, "initializeViews: layoutLoggedIn = " + (layoutLoggedIn != null ? "found" : "NULL"));
@@ -78,6 +93,7 @@ public class AccountFragment extends Fragment {
         Log.d(TAG, "initializeViews: btnRegister = " + (btnRegister != null ? "found" : "NULL"));
         Log.d(TAG, "initializeViews: btnLogout = " + (btnLogout != null ? "found" : "NULL"));
         Log.d(TAG, "initializeViews: tvUserEmail = " + (tvUserEmail != null ? "found" : "NULL"));
+        Log.d(TAG, "initializeViews: menuPurchaseHistory = " + (menuPurchaseHistory != null ? "found" : "NULL"));
     }
 
     /**
@@ -157,6 +173,20 @@ public class AccountFragment extends Fragment {
         } else {
             Log.e(TAG, "setupClickListeners: ERROR - Cannot set logout click listener, btnLogout is NULL!");
         }
+
+        // Purchase History click
+        if (menuPurchaseHistory != null) {
+            menuPurchaseHistory.setOnClickListener(v -> {
+                if (tokenManager.isLoggedIn()) {
+                    // Navigate to Order History fragment
+                    Navigation.findNavController(requireView())
+                            .navigate(R.id.action_navigation_account_to_orderHistoryFragment);
+                } else {
+                    Toast.makeText(requireContext(), "Vui lòng đăng nhập để xem đơn hàng", Toast.LENGTH_SHORT).show();
+                }
+            });
+            Log.d(TAG, "setupClickListeners: Purchase history click listener set");
+        }
     }
 
     /**
@@ -187,5 +217,133 @@ public class AccountFragment extends Fragment {
         Log.d(TAG, "onResume: Fragment resumed");
         // Update UI when fragment resumes (e.g., after returning from login)
         updateUIBasedOnLoginStatus();
+    }
+
+    /**
+     * Show order history dialog
+     */
+    private void showOrderHistory() {
+        String userId = tokenManager.getUserId();
+        if (userId == null) {
+            Toast.makeText(requireContext(), "Không tìm thấy thông tin người dùng", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Log.d(TAG, "showOrderHistory: Loading orders for user " + userId);
+
+        // Show loading dialog
+        AlertDialog loadingDialog = new AlertDialog.Builder(requireContext())
+                .setTitle("Đang tải...")
+                .setMessage("Vui lòng đợi")
+                .setCancelable(false)
+                .create();
+        loadingDialog.show();
+
+        // Call API to get orders
+        SupabaseRestApi restApi = RetrofitClient.getInstance().getRestApi();
+        restApi.getOrders("*", "eq." + userId, null, "order_date.desc").enqueue(new Callback<List<Order>>() {
+            @Override
+            public void onResponse(@NonNull Call<List<Order>> call, @NonNull Response<List<Order>> response) {
+                loadingDialog.dismiss();
+
+                if (response.isSuccessful() && response.body() != null) {
+                    List<Order> orders = response.body();
+                    Log.d(TAG, "showOrderHistory: Loaded " + orders.size() + " orders");
+
+                    if (orders.isEmpty()) {
+                        showEmptyOrdersDialog();
+                    } else {
+                        displayOrders(orders);
+                    }
+                } else {
+                    Log.e(TAG, "showOrderHistory: Failed to load orders: " + response.code());
+                    Toast.makeText(requireContext(), "Không thể tải danh sách đơn hàng", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<List<Order>> call, @NonNull Throwable t) {
+                loadingDialog.dismiss();
+                Log.e(TAG, "showOrderHistory: Error loading orders", t);
+                Toast.makeText(requireContext(), "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    /**
+     * Show empty orders dialog
+     */
+    private void showEmptyOrdersDialog() {
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Lịch sử mua hàng")
+                .setMessage("Bạn chưa có đơn hàng nào")
+                .setPositiveButton("OK", null)
+                .show();
+    }
+
+    /**
+     * Display orders in a dialog
+     */
+    private void displayOrders(List<Order> orders) {
+        // Create dialog with order list
+        StringBuilder orderList = new StringBuilder();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
+
+        for (int i = 0; i < orders.size(); i++) {
+            Order order = orders.get(i);
+
+            orderList.append("Đơn hàng #").append(i + 1).append("\n");
+            orderList.append("Mã: ").append(order.getOrderId().substring(0, 8)).append("...\n");
+            orderList.append("Tổng tiền: ").append(formatPrice(order.getTotalPrice())).append("\n");
+            orderList.append("Trạng thái: ").append(getStatusText(order.getStatus())).append("\n");
+
+            if (order.getOrderDate() != null) {
+                try {
+                    // Parse ISO date string
+                    orderList.append("Ngày đặt: ").append(order.getOrderDate()).append("\n");
+                } catch (Exception e) {
+                    Log.e(TAG, "Error parsing date", e);
+                }
+            }
+
+            orderList.append("Địa chỉ: ").append(order.getAddress()).append("\n");
+
+            if (i < orders.size() - 1) {
+                orderList.append("\n---\n\n");
+            }
+        }
+
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Lịch sử mua hàng (" + orders.size() + " đơn)")
+                .setMessage(orderList.toString())
+                .setPositiveButton("Đóng", null)
+                .show();
+    }
+
+    /**
+     * Format price to Vietnamese currency
+     */
+    private String formatPrice(double price) {
+        long priceInt = (long) price;
+        String formatted = String.format("%,d", priceInt).replace(",", ".");
+        return formatted + "₫";
+    }
+
+    /**
+     * Get status text in Vietnamese
+     */
+    private String getStatusText(String status) {
+        if (status == null) return "Không rõ";
+
+        switch (status.toLowerCase()) {
+            case "pending":
+                return "Đang xử lý";
+            case "completed":
+                return "Hoàn thành";
+            case "cancelled":
+                return "Đã hủy";
+            default:
+                return status;
+        }
     }
 }

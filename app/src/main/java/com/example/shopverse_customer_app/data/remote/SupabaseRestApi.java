@@ -164,6 +164,24 @@ public interface SupabaseRestApi {
     Call<List<Order>> createOrder(@Body Order order);
 
     /**
+     * Get orders for a user
+     * GET /rest/v1/orders?select=*&user_id=eq.{id}&status=eq.{status}&order=order_date.desc
+     *
+     * @param select Fields to select
+     * @param userIdFilter User ID filter (e.g., "eq.{userId}")
+     * @param statusFilter Status filter (e.g., "eq.pending") or null for all
+     * @param order Sort order (e.g., "order_date.desc")
+     * @return List of orders
+     */
+    @GET("rest/v1/orders")
+    Call<List<Order>> getOrders(
+            @Query("select") String select,
+            @Query("user_id") String userIdFilter,
+            @Query("status") String statusFilter,
+            @Query("order") String order
+    );
+
+    /**
      * Create order items
      * POST /rest/v1/order_items
      *
