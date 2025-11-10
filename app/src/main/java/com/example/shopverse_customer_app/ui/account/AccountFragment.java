@@ -14,6 +14,8 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
+import androidx.navigation.NavController;
+import androidx.navigation.NavOptions;
 import androidx.navigation.Navigation;
 
 import com.example.shopverse_customer_app.R;
@@ -200,15 +202,30 @@ public class AccountFragment extends Fragment {
         tokenManager.clearTokens();
         Log.d(TAG, "handleLogout: All tokens cleared");
 
+        // Update UI immediately to show logged out state
+        updateUIBasedOnLoginStatus();
+        Log.d(TAG, "handleLogout: UI updated to logged out state");
+
         // Show success message
         Toast.makeText(requireContext(), "Đã đăng xuất thành công", Toast.LENGTH_SHORT).show();
 
-        // Navigate to home/dashboard
-        Navigation.findNavController(requireView()).navigate(R.id.navigation_dashboard);
-        Log.d(TAG, "handleLogout: Navigated to dashboard");
+        // Navigate to dashboard with proper navigation options to prevent navigation issues
+        requireView().postDelayed(() -> {
+            try {
+                NavController navController = Navigation.findNavController(requireView());
 
-        // Update UI to show logged out state
-        updateUIBasedOnLoginStatus();
+                // Clear the entire navigation stack and navigate to dashboard
+                NavOptions navOptions = new NavOptions.Builder()
+                        .setPopUpTo(R.id.mobile_navigation, false) // Don't pop the entire graph
+                        .setLaunchSingleTop(true) // Prevent multiple instances
+                        .build();
+
+                navController.navigate(R.id.navigation_dashboard, null, navOptions);
+                Log.d(TAG, "handleLogout: Navigated to dashboard with NavOptions");
+            } catch (Exception e) {
+                Log.e(TAG, "handleLogout: Error navigating to dashboard", e);
+            }
+        }, 100);
     }
 
     @Override

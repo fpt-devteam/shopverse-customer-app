@@ -29,6 +29,7 @@ public class CartRepository {
 
     /**
      * Get all cart items for a user
+     * Returns items in reverse chronological order (newest first)
      *
      * @param userId User ID (UUID string)
      * @param callback Callback with list of cart items
@@ -36,8 +37,11 @@ public class CartRepository {
     public void getCartItems(String userId, CartItemsCallback callback) {
         String select = "*,products(*)";
         String userFilter = "eq." + userId;
+        String order = "updated_at.desc"; // Order by updated_at descending (newest first)
 
-        restApi.getCartItems(select, userFilter).enqueue(new Callback<List<CartItem>>() {
+        Log.d(TAG, "Fetching cart items for user: " + userId + " with order: " + order);
+
+        restApi.getCartItems(select, userFilter, order).enqueue(new Callback<List<CartItem>>() {
             @Override
             public void onResponse(@NonNull Call<List<CartItem>> call,
                                    @NonNull Response<List<CartItem>> response) {

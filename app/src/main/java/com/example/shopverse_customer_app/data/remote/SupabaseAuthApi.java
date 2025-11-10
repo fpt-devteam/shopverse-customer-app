@@ -53,4 +53,21 @@ public interface SupabaseAuthApi {
      */
     @PUT("auth/v1/user")
     Call<User> updatePassword(@Body JsonObject request);
+
+    /**
+     * GOOGLE SIGN-IN: POST /auth/v1/token?grant_type=id_token
+     * Sign in with Google ID token (requires apikey)
+     * Body: { "id_token": "google_id_token", "provider": "google" }
+     */
+    @POST("auth/v1/token?grant_type=id_token")
+    Call<AuthResponse> signInWithGoogle(@Body JsonObject request);
+
+    /**
+     * RESET PASSWORD: PUT /auth/v1/user
+     * Reset password using recovery access token (requires apikey + bearer token)
+     * Body: { "password": "new_password" }
+     * Header: Authorization: Bearer <recovery_access_token>
+     */
+    @PUT("auth/v1/user")
+    Call<User> resetPassword(@Body JsonObject request);
 }

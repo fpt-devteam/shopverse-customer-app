@@ -178,6 +178,18 @@ public class CartFragment extends Fragment implements CartAdapter.OnCartItemList
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+        Log.d(TAG, "onResume: Refreshing cart");
+
+        // Refresh cart items when fragment resumes (e.g., after adding item from product detail)
+        String userId = tokenManager.getUserId();
+        if (userId != null && !userId.isEmpty()) {
+            cartViewModel.loadCartItems(userId);
+        }
+    }
+
+    @Override
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;

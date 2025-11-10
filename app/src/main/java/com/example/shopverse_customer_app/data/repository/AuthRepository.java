@@ -13,7 +13,9 @@ import com.example.shopverse_customer_app.data.remote.RetrofitClient;
 import com.example.shopverse_customer_app.data.remote.SupabaseAuthApi;
 import com.example.shopverse_customer_app.data.remote.SupabaseRestApi;
 import com.example.shopverse_customer_app.utils.ErrorParser;
+import com.example.shopverse_customer_app.utils.GoogleSignInManager;
 import com.example.shopverse_customer_app.utils.TokenManager;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.gson.JsonObject;
 
 import java.io.IOException;
@@ -35,6 +37,7 @@ public class AuthRepository {
     private final SupabaseRestApi restApi;
     private final TokenManager tokenManager;
     private final RetrofitClient retrofitClient;
+    private final GoogleSignInManager googleSignInManager;
 
     /**
      * Constructor
@@ -44,6 +47,7 @@ public class AuthRepository {
         this.authApi = retrofitClient.getAuthApi();
         this.restApi = retrofitClient.getRestApi();
         this.tokenManager = new TokenManager(context);
+        this.googleSignInManager = new GoogleSignInManager(context);
 
         // Load saved access token and set it in AuthInterceptor
         loadSavedToken();
@@ -175,29 +179,144 @@ public class AuthRepository {
      * Request password reset
      */
     public void requestPasswordReset(String email, SimpleCallback callback) {
+        Log.d(TAG, "=== Requesting Password Reset ===");
+        Log.d(TAG, "Email: " + email);
+
         JsonObject request = new JsonObject();
         request.addProperty("email", email);
+
+        Log.d(TAG, "Request body: " + request.toString());
+        Log.d(TAG, "Calling Supabase Auth API: POST /auth/v1/recover");
 
         authApi.recover(request).enqueue(new Callback<Void>() {
             @Override
             public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
+                Log.d(TAG, "=== Password Reset Response ===");
+                Log.d(TAG, "Response code: " + response.code());
+                Log.d(TAG, "Response message: " + response.message());
+
                 if (response.isSuccessful()) {
+                    Log.d(TAG, "✅ Password reset email sent successfully to: " + email);
                     callback.onSuccess();
-                    Log.d(TAG, "Password reset email sent");
                 } else {
+                    Log.e(TAG, "❌ Password reset failed");
+                    Log.e(TAG, "Response code: " + response.code());
+
+                    // Try to get error body
+                    try {
+                        if (response.errorBody() != null) {
+                            String errorBody = response.errorBody().string();
+                            Log.e(TAG, "Error body: " + errorBody);
+                        }
+                    } catch (IOException e) {
+                        Log.e(TAG, "Could not read error body", e);
+                    }
+
                     String errorMsg = ErrorParser.parseError(response);
+                    Log.e(TAG, "Parsed error: " + errorMsg);
                     callback.onError(errorMsg);
-                    Log.e(TAG, "Password reset failed: " + errorMsg);
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
+                Log.e(TAG, "=== Password Reset Network Error ===");
+                Log.e(TAG, "Error type: " + t.getClass().getSimpleName());
+                Log.e(TAG, "Error message: " + t.getMessage());
+                Log.e(TAG, "Stack trace:", t);
+
                 String errorMsg = ErrorParser.parseError(t);
+                Log.e(TAG, "Parsed error: " + errorMsg);
                 callback.onError(errorMsg);
-                Log.e(TAG, "Password reset network error", t);
             }
         });
+    }
+
+    /**
+     * Sign in with Google using Supabase Auth
+     * Uses Google ID token to authenticate with Supabase
+     */
+    public void loginWithGoogle(String idToken, AuthCallback callback) {
+        Log.d(TAG, "=== loginWithGoogle in AuthRepository ===");
+        Log.d(TAG, "ID Token is " + (idToken != null ? "present" : "NULL"));
+
+        if (idToken == null || idToken.isEmpty()) {
+            Log.e(TAG, "ID Token is null or empty!");
+            callback.onError("Invalid Google ID token");
+            return;
+        }
+
+        // Create request body for Supabase Auth
+        JsonObject request = new JsonObject();
+        request.addProperty("id_token", idToken);
+        request.addProperty("provider", "google");
+
+        Log.d(TAG, "Request body created: " + request.toString());
+        Log.d(TAG, "Calling Supabase Auth API endpoint: /auth/v1/token?grant_type=id_token");
+
+        // Call Supabase Auth API to sign in with Google
+        authApi.signInWithGoogle(request).enqueue(new Callback<AuthResponse>() {
+            @Override
+            public void onResponse(@NonNull Call<AuthResponse> call, @NonNull Response<AuthResponse> response) {
+                Log.d(TAG, "=== Supabase Auth Response Received ===");
+                Log.d(TAG, "Response code: " + response.code());
+                Log.d(TAG, "Response message: " + response.message());
+                Log.d(TAG, "Response is successful: " + response.isSuccessful());
+
+                if (response.isSuccessful() && response.body() != null) {
+                    AuthResponse authResponse = response.body();
+                    Log.d(TAG, "=== Google Sign-In SUCCESS ===");
+                    Log.d(TAG, "Access token present: " + (authResponse.getAccessToken() != null && !authResponse.getAccessToken().isEmpty()));
+                    Log.d(TAG, "Refresh token present: " + (authResponse.getRefreshToken() != null && !authResponse.getRefreshToken().isEmpty()));
+                    Log.d(TAG, "User present: " + (authResponse.getUser() != null));
+                    if (authResponse.getUser() != null) {
+                        Log.d(TAG, "User ID: " + authResponse.getUser().getId());
+                        Log.d(TAG, "User Email: " + authResponse.getUser().getEmail());
+                    }
+
+                    Log.d(TAG, "Saving auth session...");
+                    saveAuthSession(authResponse);
+                    Log.d(TAG, "Calling callback.onSuccess()");
+                    callback.onSuccess(authResponse);
+                } else {
+                    Log.e(TAG, "=== Google Sign-In FAILED ===");
+                    Log.e(TAG, "Response code: " + response.code());
+
+                    // Log response body if error
+                    try {
+                        if (response.errorBody() != null) {
+                            String errorBody = response.errorBody().string();
+                            Log.e(TAG, "Error body: " + errorBody);
+                        }
+                    } catch (IOException e) {
+                        Log.e(TAG, "Could not read error body", e);
+                    }
+
+                    String errorMsg = ErrorParser.parseError(response);
+                    Log.e(TAG, "Error message: " + errorMsg);
+                    callback.onError(errorMsg);
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<AuthResponse> call, @NonNull Throwable t) {
+                Log.e(TAG, "=== Supabase Auth Network Error ===");
+                Log.e(TAG, "Error type: " + t.getClass().getSimpleName());
+                Log.e(TAG, "Error message: " + t.getMessage());
+                Log.e(TAG, "Stack trace:", t);
+
+                String errorMsg = ErrorParser.parseError(t);
+                Log.e(TAG, "Parsed error message: " + errorMsg);
+                callback.onError(errorMsg);
+            }
+        });
+    }
+
+    /**
+     * Get GoogleSignInClient for starting sign-in flow
+     */
+    public GoogleSignInClient getGoogleSignInClient() {
+        return googleSignInManager.getGoogleSignInClient();
     }
 
     /**

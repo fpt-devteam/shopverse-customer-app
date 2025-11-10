@@ -11,6 +11,7 @@ import androidx.lifecycle.MutableLiveData;
 import com.example.shopverse_customer_app.data.model.AuthResponse;
 import com.example.shopverse_customer_app.data.repository.AuthRepository;
 import com.example.shopverse_customer_app.utils.FirebaseTokenManager;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 
 /**
  * ViewModel for authentication operations
@@ -68,6 +69,63 @@ public class AuthViewModel extends AndroidViewModel {
                 loginSuccess.postValue(false);
             }
         });
+    }
+
+    /**
+     * Login with Google
+     */
+    public void loginWithGoogle(String idToken) {
+        Log.d("AuthViewModel", "=== loginWithGoogle called ===");
+        Log.d("AuthViewModel", "ID Token is " + (idToken != null ? "present" : "NULL"));
+
+        if (idToken == null || idToken.isEmpty()) {
+            Log.e("AuthViewModel", "ID Token is null or empty!");
+            errorMessage.setValue("Invalid Google sign-in");
+            return;
+        }
+
+        Log.d("AuthViewModel", "ID Token length: " + idToken.length());
+        Log.d("AuthViewModel", "Setting isLoading to true");
+        isLoading.setValue(true);
+
+        Log.d("AuthViewModel", "Calling authRepository.loginWithGoogle()");
+        authRepository.loginWithGoogle(idToken, new AuthRepository.AuthCallback() {
+            @Override
+            public void onSuccess(AuthResponse response) {
+                Log.d("AuthViewModel", "=== Google login SUCCESS ===");
+                Log.d("AuthViewModel", "User ID: " + (response.getUser() != null ? response.getUser().getId() : "NULL"));
+                Log.d("AuthViewModel", "User Email: " + (response.getUser() != null ? response.getUser().getEmail() : "NULL"));
+                Log.d("AuthViewModel", "Access Token present: " + (response.getAccessToken() != null && !response.getAccessToken().isEmpty()));
+
+                isLoading.postValue(false);
+                authResponse.postValue(response);
+                loginSuccess.postValue(true);
+
+                if (response.getUser() != null) {
+                    Log.d("AuthViewModel", "Updating Firebase token for user: " + response.getUser().getId());
+                    FirebaseTokenManager.updateToken(getApplication(), response.getUser().getId());
+                } else {
+                    Log.w("AuthViewModel", "User is null, skipping Firebase token update");
+                }
+            }
+
+            @Override
+            public void onError(String error) {
+                Log.e("AuthViewModel", "=== Google login ERROR ===");
+                Log.e("AuthViewModel", "Error message: " + error);
+
+                isLoading.postValue(false);
+                errorMessage.postValue(error);
+                loginSuccess.postValue(false);
+            }
+        });
+    }
+
+    /**
+     * Get GoogleSignInClient for starting sign-in flow
+     */
+    public GoogleSignInClient getGoogleSignInClient() {
+        return authRepository.getGoogleSignInClient();
     }
 
     /**

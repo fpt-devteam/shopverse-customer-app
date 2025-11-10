@@ -15,6 +15,7 @@ if (localPropertiesFile.exists()) {
 val mapsApiKey: String = localProperties.getProperty("GOOGLE_MAPS_API_KEY") ?: "YOUR_API_KEY_HERE"
 val supabaseUrl: String = localProperties.getProperty("SUPABASE_URL") ?: "https://shopverse.supabase.co"
 val supabaseAnonKey: String = localProperties.getProperty("SUPABASE_ANON_KEY") ?: "YOUR_SUPABASE_ANON_KEY"
+val googleClientId: String = localProperties.getProperty("GOOGLE_CLIENT_ID") ?: "YOUR_GOOGLE_CLIENT_ID"
 
 android {
     namespace = "com.example.shopverse_customer_app"
@@ -36,6 +37,7 @@ android {
         buildConfigField("String", "GOOGLE_MAPS_API_KEY", "\"$mapsApiKey\"")
         buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
+        buildConfigField("String", "GOOGLE_CLIENT_ID", "\"$googleClientId\"")
     }
 
     buildTypes {
@@ -98,6 +100,10 @@ dependencies {
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
 
+    // Firebase (for messaging only)
     implementation(platform("com.google.firebase:firebase-bom:34.5.0"))
     implementation("com.google.firebase:firebase-analytics")
+
+    // Google Sign-In (for Supabase OAuth)
+    implementation("com.google.android.gms:play-services-auth:21.2.0")
 }

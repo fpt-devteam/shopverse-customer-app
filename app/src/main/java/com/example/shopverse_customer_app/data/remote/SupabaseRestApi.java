@@ -93,16 +93,18 @@ public interface SupabaseRestApi {
 
     /**
      * Get cart items for a user (with product join)
-     * GET /rest/v1/cart_items?select=*,products(*)&user_id=eq.{id}
+     * GET /rest/v1/cart_items?select=*,products(*)&user_id=eq.{id}&order={order}
      *
      * @param select Fields to select with joins (e.g., "*,products(*)")
      * @param userIdFilter User ID filter (e.g., "eq.123")
+     * @param order Sort order (e.g., "updated_at.desc" for newest first)
      * @return List of cart items with product details
      */
     @GET("rest/v1/cart_items")
     Call<List<CartItem>> getCartItems(
             @Query("select") String select,
-            @Query("user_id") String userIdFilter
+            @Query("user_id") String userIdFilter,
+            @Query("order") String order
     );
 
     /**

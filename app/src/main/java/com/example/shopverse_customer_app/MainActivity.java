@@ -13,6 +13,10 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.navigation.NavController;
 import androidx.navigation.NavOptions;
 import androidx.navigation.Navigation;
@@ -36,6 +40,8 @@ public class MainActivity extends AppCompatActivity {
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+
         // Setup toolbar (hide title, only show it for specific fragments)
         setSupportActionBar(binding.toolbar);
         if (getSupportActionBar() != null) {
@@ -43,6 +49,12 @@ public class MainActivity extends AppCompatActivity {
         }
 
         BottomNavigationView navView = findViewById(R.id.nav_view);
+        View root = findViewById(R.id.container);
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            return insets;
+        });
         // Passing each menu ID as a set of Ids because each
         // menu should be considered as top level destinations.
         AppBarConfiguration appBarConfiguration = new AppBarConfiguration.Builder(
@@ -52,16 +64,40 @@ public class MainActivity extends AppCompatActivity {
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
 
         navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
+            Log.d(TAG, "Destination changed to: " + destination.getLabel());
+            Log.d(TAG, "Destination ID: " + destination.getId());
+
             if (destination.getId() == R.id.navigation_checkout ||
                 destination.getId() == R.id.productDetailFragment ||
                 destination.getId() == R.id.orderHistoryFragment) {
                 binding.navView.setVisibility(View.GONE);
+                Log.d(TAG, "Bottom navigation hidden for: " + destination.getLabel());
             } else {
                 binding.navView.setVisibility(View.VISIBLE);
+                Log.d(TAG, "Bottom navigation visible for: " + destination.getLabel());
             }
         });
 
         NavigationUI.setupWithNavController(binding.navView, navController);
+        Log.d(TAG, "Bottom navigation setup complete");
+
+        // Add listener to debug navigation clicks
+        binding.navView.setOnItemSelectedListener(item -> {
+            int itemId = item.getItemId();
+            Log.d(TAG, "=== Bottom Nav Item Clicked ===");
+            Log.d(TAG, "Item ID clicked: " + itemId);
+            Log.d(TAG, "Current destination: " + (navController.getCurrentDestination() != null
+                ? navController.getCurrentDestination().getId() : "NULL"));
+
+            // Let NavigationUI handle the navigation
+            boolean handled = NavigationUI.onNavDestinationSelected(item, navController);
+
+            Log.d(TAG, "Navigation handled: " + handled);
+            Log.d(TAG, "New destination: " + (navController.getCurrentDestination() != null
+                ? navController.getCurrentDestination().getId() : "NULL"));
+
+            return handled;
+        });
 
         // Handle deep link from payment callback
         handleDeepLink(getIntent());
@@ -72,6 +108,41 @@ public class MainActivity extends AppCompatActivity {
         super.onNewIntent(intent);
         setIntent(intent);
         handleDeepLink(intent);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.d(TAG, "onResume: Activity resumed");
+        // Ensure bottom navigation is synced with current destination
+        syncBottomNavigationWithNavController();
+    }
+
+    /**
+     * Sync bottom navigation selection with current nav controller destination
+     */
+    private void syncBottomNavigationWithNavController() {
+        if (navController != null && binding != null && binding.navView != null) {
+            int currentDestinationId = navController.getCurrentDestination() != null
+                ? navController.getCurrentDestination().getId()
+                : R.id.navigation_dashboard;
+
+            Log.d(TAG, "syncBottomNavigationWithNavController: Current destination ID = " + currentDestinationId);
+            Log.d(TAG, "syncBottomNavigationWithNavController: Current bottom nav selection = " + binding.navView.getSelectedItemId());
+
+            // Only update if they don't match to avoid unnecessary updates
+            if (binding.navView.getSelectedItemId() != currentDestinationId) {
+                Log.d(TAG, "syncBottomNavigationWithNavController: Syncing bottom nav...");
+
+                // Update bottom navigation selection to match current destination
+                binding.navView.post(() -> {
+                    binding.navView.setSelectedItemId(currentDestinationId);
+                    Log.d(TAG, "syncBottomNavigationWithNavController: Bottom nav updated to " + currentDestinationId);
+                });
+            } else {
+                Log.d(TAG, "syncBottomNavigationWithNavController: Already in sync, no update needed");
+            }
+        }
     }
 
     /**

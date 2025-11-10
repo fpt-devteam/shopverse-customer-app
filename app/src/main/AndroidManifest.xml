@@ -41,7 +41,7 @@
             </intent-filter>
 
             <!-- Deep link for payment callback -->
-            <intent-filter android:autoVerify="true">
+            <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
@@ -69,6 +69,25 @@
             android:name=".ui.auth.ForgotPasswordActivity"
             android:exported="false"
             android:label="Forgot Password" />
+
+        <!-- Reset Password Activity - Handles deep link from password reset email -->
+        <activity
+            android:name=".ui.auth.ResetPasswordActivity"
+            android:exported="true"
+            android:label="Reset Password"
+            android:launchMode="singleTask">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <!-- Deep link: shopverse://auth/reset?access_token=xxx&refresh_token=xxx&type=recovery -->
+                <data
+                    android:scheme="shopverse"
+                    android:host="auth"
+                    android:path="/reset" />
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>

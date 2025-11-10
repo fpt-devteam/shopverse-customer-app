@@ -7,7 +7,9 @@
       "Bash(dir \"C:\\Users\\NHATTHANG\\FptUniversity\\PRM392\\shopverse-customer-app\\app\\src\\main\\res\")",
       "Bash(findstr:*)",
       "Bash(dir:*)",
-      "Bash(nul)"
+      "Bash(nul)",
+      "Bash(gradlew signingReport:*)",
+      "Bash(.gradlew.bat signingReport)"
     ],
     "deny": [],
     "ask": []
